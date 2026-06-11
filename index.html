@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>DistressIQ</title>
+  <meta name="theme-color" content="#0a0a0a" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon-192.png" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+
+  <header class="appbar">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#0a0a0a"
+             stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7 3 L10 10 L8 13 L13 21"/>
+        </svg>
+      </div>
+      <div class="title" data-i18n="app_name">DistressIQ</div>
+    </div>
+    <div class="status" id="status">
+      <span class="dot"></span>
+      <span id="status-label" data-i18n="status_offline">offline</span>
+    </div>
+  </header>
+  <div class="hazard"></div>
+
+  <div class="layout">
+    <nav class="nav">
+      <ul id="navlist"><!-- generata da app.js --></ul>
+    </nav>
+    <main class="content" id="content"><!-- vista attiva --></main>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
