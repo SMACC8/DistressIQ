@@ -8,14 +8,10 @@
 import { optgroupsDistress } from "./gruppi.js";
 import { db } from "./db.js";
 import { storage } from "./storage.js";
+import { t } from "./i18n.js";
 
-const STRATO = {
-  drenante_nuovo: "Drenante nuovo",
-  drenante_maturo: "Drenante maturo",
-  non_drenante: "Non drenante",
-  non_determinabile: "Non determinabile",
-};
-const SEVL = { bassa: "Bassa", media: "Media", alta: "Alta" };
+const STRATO = (k) => (k ? t("strato_" + k) : "");
+const SEVL = (k) => (k ? t("sev_" + k) : "");
 const it = (o) => (o && (o.it || o.en || o.es)) || "";
 
 // numeri prima, poi i personalizzati (C1, C2...) — come nel Rilievo
@@ -57,51 +53,50 @@ function ridimensiona(file, max, q) {
 function markup() {
   return `
     <div class="panel form-panel">
-      <h2 class="sec-h">Nuovo esempio di riferimento</h2>
+      <h2 class="sec-h">${t("cal_nuovo_es")}</h2>
       <div class="cal-foto">
         <input type="file" id="cal-file" accept="image/*" capture="environment" hidden>
-        <button class="btn" id="cal-pick">Scegli o scatta foto</button>
+        <button class="btn" id="cal-pick">${t("ril_foto_scegli")}</button>
         <div id="cal-prev" class="cal-prev" hidden>
           <img id="cal-prev-img" alt="anteprima">
-          <button class="btn cal-rm" id="cal-rm">Rimuovi</button>
+          <button class="btn cal-rm" id="cal-rm">${t("cal_rimuovi")}</button>
         </div>
       </div>
       <div class="form-grid" style="margin-top:16px">
         <div class="field">
-          <label>Distress</label>
-          <select id="cal-distress"><option value="">caricamento…</option></select>
+          <label>${t("sto_distress_lbl")}</label>
+          <select id="cal-distress"><option value="">${t("cat_caricamento")}</option></select>
         </div>
         <div class="field">
-          <label>Severità</label>
+          <label>${t("ril_sev")}</label>
           <select id="cal-sev">
             <option value="">—</option>
-            <option value="bassa">Bassa</option>
-            <option value="media">Media</option>
-            <option value="alta">Alta</option>
+            <option value="bassa">${t("sev_bassa")}</option>
+            <option value="media">${t("sev_media")}</option>
+            <option value="alta">${t("sev_alta")}</option>
           </select>
         </div>
         <div class="field">
-          <label>Strato</label>
+          <label>${t("sto_strato_lbl")}</label>
           <select id="cal-strato">
             <option value="">—</option>
-            <option value="drenante_nuovo">Drenante nuovo</option>
-            <option value="drenante_maturo">Drenante maturo</option>
-            <option value="non_drenante">Non drenante</option>
-            <option value="non_determinabile">Non determinabile</option>
+            <option value="drenante_nuovo">${t("strato_drenante_nuovo")}</option>
+            <option value="drenante_maturo">${t("strato_drenante_maturo")}</option>
+            <option value="non_drenante">${t("strato_non_drenante")}</option>
+            <option value="non_determinabile">${t("strato_non_determinabile")}</option>
           </select>
         </div>
       </div>
       <div class="field" style="margin-top:16px">
-        <button class="btn btn-primary" id="cal-save" disabled>Salva esempio</button>
+        <button class="btn btn-primary" id="cal-save" disabled>${t("cal_salva_es")}</button>
         <span class="hint mono" id="cal-stato"></span>
       </div>
     </div>
 
     <div class="panel" style="margin-top:16px">
-      <h2 class="sec-h">Libreria esempi</h2>
+      <h2 class="sec-h">${t("cal_libreria")}</h2>
       <div class="mono" style="font-size:12px;color:var(--muted);margin-bottom:14px">
-        Gli esempi <span style="color:var(--accent)">attivi</span> guidano il riconoscimento dell'AI come riferimenti (few-shot).
-        Con <b>Annota</b> marchi <i>dove</i> si trova il distress su ciascun esempio. I riquadri che l'AI disegna li vedi invece nel <b>Rilievo</b>, dopo "Avvia riconoscimento AI".
+        ${t("cal_lib_sub")}
       </div>
       <div id="cal-list" class="cal-list mono" style="color:var(--muted)">caricamento…</div>
     </div>`;
@@ -162,7 +157,7 @@ export async function renderCalibrazione(root) {
     if (!file || !selDistress.value) return;
     saveBtn.disabled = true;
     stato.style.color = "var(--muted)";
-    stato.textContent = "salvataggio…";
+    stato.textContent = t("nf_salvataggio");
     try {
       const base = `esempi/${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const full = await ridimensiona(file, 1280, 0.82);
@@ -182,7 +177,7 @@ export async function renderCalibrazione(root) {
       file = null; fileInput.value = ""; prev.hidden = true; prevImg.removeAttribute("src");
       selSev.value = ""; selStrato.value = "";
       stato.style.color = "var(--accent)";
-      stato.textContent = "esempio salvato";
+      stato.textContent = t("cal_es_salvato");
       setTimeout(() => { stato.textContent = ""; }, 2500);
       caricaLista();
     } catch (e) {
@@ -199,14 +194,14 @@ export async function renderCalibrazione(root) {
     try {
       const esempi = await db.ml.list();
       if (!esempi.length) {
-        box.innerHTML = `<div class="placeholder"><div class="small">Nessun esempio ancora. Carica la prima foto di riferimento.</div></div>`;
+        box.innerHTML = `<div class="placeholder"><div class="small">${t("cal_vuoto")}</div></div>`;
         return;
       }
       box.style.color = "var(--text)";
       box.innerHTML = esempi.map((e) => {
         const turl = storage.url(thumbDi(e.foto_id));
         const nome = e.distress ? `${e.distress.codice}·${it(e.distress.nome)}` : "—";
-        const meta = [SEVL[e.severita] || "", STRATO[e.strato] || "", e.fonte || ""]
+        const meta = [SEVL(e.severita) || "", STRATO(e.strato) || "", e.fonte || ""]
           .filter(Boolean).join(" · ");
         const nReg = (e.posizione && Array.isArray(e.posizione.annotazioni)) ? e.posizione.annotazioni.length : 0;
         const regBadge = nReg ? `<span class="cal-reg mono">▢ ${nReg}</span>` : "";
@@ -217,9 +212,9 @@ export async function renderCalibrazione(root) {
               <div class="cal-title">${nome} ${regBadge}</div>
               <div class="cal-meta">${meta}</div>
             </div>
-            <button class="btn cal-ann" data-id="${e.id}" title="Marca sull'immagine dove si trova il distress: guida l'AI">Annota</button>
-            <button class="btn cal-tog" data-id="${e.id}" data-attivo="${e.attivo ? 1 : 0}">${e.attivo ? "Attivo" : "Disattivato"}</button>
-            <button class="btn cal-del" data-id="${e.id}">Elimina</button>
+            <button class="btn cal-ann" data-id="${e.id}" title="${t("cal_annota_t")}">${t("cal_annota")}</button>
+            <button class="btn cal-tog" data-id="${e.id}" data-attivo="${e.attivo ? 1 : 0}">${e.attivo ? t("stato_attivo") : t("stato_off")}</button>
+            <button class="btn cal-del" data-id="${e.id}">${t("cal_elimina")}</button>
           </div>`;
       }).join("");
 
@@ -235,13 +230,13 @@ export async function renderCalibrazione(root) {
           const nuovo = b.dataset.attivo !== "1";
           b.disabled = true;
           try { await db.ml.update(id, { attivo: nuovo }); caricaLista(); }
-          catch (err) { b.disabled = false; alert(`Errore: ${(err && err.message) || err}`); }
+          catch (err) { b.disabled = false; alert(`${t("ril_errore")}: ${(err && err.message) || err}`); }
         }));
 
       box.querySelectorAll(".cal-del").forEach((b) =>
         b.addEventListener("click", async () => {
           const id = b.dataset.id;
-          if (!confirm("Eliminare questo esempio?")) return;
+          if (!confirm(t("cal_conf_elim"))) return;
           b.disabled = true;
           const e = esempi.find((x) => x.id === id);
           try {
@@ -251,7 +246,7 @@ export async function renderCalibrazione(root) {
               storage.remove(thumbDi(e.foto_id)).catch(() => {});
             }
             caricaLista();
-          } catch (err) { b.disabled = false; alert(`Errore: ${(err && err.message) || err}`); }
+          } catch (err) { b.disabled = false; alert(`${t("ril_errore")}: ${(err && err.message) || err}`); }
         }));
     } catch (e) {
       box.innerHTML = `Errore nel caricamento: ${(e && e.message) ? e.message : e}`;
@@ -265,39 +260,39 @@ export async function renderCalibrazione(root) {
 // Coordinate salvate normalizzate 0..1 -> indipendenti dalla risoluzione.
 function apriAnnotazione(esempio, onSaved) {
   const N = 1000;
-  const titolo = esempio.distress ? `${esempio.distress.codice}·${it(esempio.distress.nome)}` : "Esempio";
+  const titolo = esempio.distress ? `${esempio.distress.codice}·${it(esempio.distress.nome)}` : t("cal_esempio");
 
   const ov = document.createElement("div");
   ov.className = "modal-overlay";
   ov.innerHTML = `
     <div class="modal modal-ann" role="dialog" aria-modal="true">
       <div class="m-head">
-        <h3>Annotazione — ${titolo}</h3>
-        <button class="m-close" aria-label="Chiudi">×</button>
+        <h3>${t("cal_annotazione")} — ${titolo}</h3>
+        <button class="m-close" aria-label="${t("chiudi")}">×</button>
       </div>
       <div class="m-body">
-        <div class="ann-help">Marca <b>dove</b> si trova il distress su questa immagine di riferimento (disegna un'<b>area</b> o una <b>linea</b>). Queste regioni guidano il riconoscimento dell'AI sui rilievi futuri. Quando hai finito, premi <b>Salva annotazioni</b>.</div>
+        <div class="ann-help">${t("cal_ann_help")}</div>
         <div class="ann-tools">
           <div class="ann-seg">
-            <button class="btn ann-tool active" data-tool="area">Area</button>
-            <button class="btn ann-tool" data-tool="linea">Linea</button>
+            <button class="btn ann-tool active" data-tool="area">${t("cal_area")}</button>
+            <button class="btn ann-tool" data-tool="linea">${t("cal_linea")}</button>
           </div>
-          <button class="btn" id="ann-fine">Termina linea</button>
-          <button class="btn" id="ann-undo">Annulla ultimo</button>
-          <button class="btn" id="ann-clear">Cancella tutto</button>
+          <button class="btn" id="ann-fine">${t("cal_fine_linea")}</button>
+          <button class="btn" id="ann-undo">${t("cal_undo")}</button>
+          <button class="btn" id="ann-clear">${t("cal_clear")}</button>
           <span class="hint mono" id="ann-info"></span>
         </div>
         <div class="ann-stage" id="ann-stage">
           <img id="ann-img" alt="">
           <svg id="ann-svg" viewBox="0 0 ${N} ${N}" preserveAspectRatio="none"></svg>
         </div>
-        <div class="hint mono" style="margin-top:8px">Area: trascina per il rettangolo. Linea: tocca per aggiungere punti, poi "Termina linea" (o doppio tocco).</div>
+        <div class="hint mono" style="margin-top:8px">${t("cal_ann_hint")}</div>
       </div>
       <div class="m-foot">
         <div class="hint mono" id="ann-stato"></div>
         <div class="m-actions">
-          <button class="btn" id="ann-annulla">Chiudi</button>
-          <button class="btn btn-primary" id="ann-salva">Salva annotazioni</button>
+          <button class="btn" id="ann-annulla">${t("chiudi")}</button>
+          <button class="btn btn-primary" id="ann-salva">${t("cal_salva_ann")}</button>
         </div>
       </div>
     </div>`;
@@ -392,7 +387,7 @@ function apriAnnotazione(esempio, onSaved) {
 
   salvaBtn.addEventListener("click", async () => {
     if (lineaInCorso) terminaLinea();
-    salvaBtn.disabled = true; stato.style.color = "var(--muted)"; stato.textContent = "salvataggio…";
+    salvaBtn.disabled = true; stato.style.color = "var(--muted)"; stato.textContent = t("nf_salvataggio");
     try {
       await db.ml.update(esempio.id, { posizione: { annotazioni: ann } });
       chiudi();
@@ -400,7 +395,7 @@ function apriAnnotazione(esempio, onSaved) {
     } catch (e) {
       salvaBtn.disabled = false;
       stato.style.color = "#ff8a8a";
-      stato.textContent = "Errore: " + ((e && e.message) ? e.message : e);
+      stato.textContent = (t("ril_errore") + ": ") + ((e && e.message) ? e.message : e);
     }
   });
 

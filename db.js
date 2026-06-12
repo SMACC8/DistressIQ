@@ -6,6 +6,7 @@
 
 import { createClient } from "./vendor/supabase.js";
 import { SUPABASE_URL, SUPABASE_KEY } from "./config.js";
+import { guardAI } from "./guardrail.js";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -165,13 +166,17 @@ export const db = {
 
 // Invoca la Edge Function di riconoscimento AI (proxy verso Gemini)
 export async function riconosciDistress(payload) {
-  const { data, error } = await supabase.functions.invoke("riconosci-distress", { body: payload });
+  guardAI();                                   // freno anti-tempesta di chiamate
+  let tier = "standard";
+  try { tier = localStorage.getItem("distressiq_model_tier") || "standard"; } catch {}
+  const { data, error } = await supabase.functions.invoke("riconosci-distress", { body: { ...payload, tier } });
   if (error) throw error;
   return data;
 }
 
 // Invoca la Edge Function che, dal nome, suggerisce descrizione/cause/soluzioni
 export async function suggerisciDistress(payload) {
+  guardAI();                                   // stesso freno (stesso credito)
   const { data, error } = await supabase.functions.invoke("suggerisci-distress", { body: payload });
   if (error) throw error;
   return data;

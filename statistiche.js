@@ -4,15 +4,11 @@
 // =====================================================================
 
 import { db } from "./db.js";
-import { calcolaIQ, FASCE } from "./iq.js";
+import { calcolaIQ, FASCE, labelFascia } from "./iq.js";
+import { t } from "./i18n.js";
 
-const STRATO = {
-  drenante_nuovo: "Drenante nuovo",
-  drenante_maturo: "Drenante maturo",
-  non_drenante: "Non drenante",
-  non_determinabile: "Non determinabile",
-};
-const SEVL = { bassa: "Bassa", media: "Media", alta: "Alta", nessuna: "Nessuna" };
+const STRATO = (k) => (k ? t("strato_" + k) : "");
+const SEVL = (k) => t("sev_" + k);
 
 const FASCIA_COLORE = { ottimo: "#38c172", buono: "#8bd450", discreto: "#ffc400", scarso: "#ff8c1a", critico: "#e5484d" };
 const GRAVITA_COLORE = { bassa: "#38c172", media: "#ff8c1a", alta: "#e5484d", nessuna: "#6b7280" };
@@ -59,11 +55,11 @@ function kpi(s) {
   const aiPct = s.distressTot ? Math.round((s.perOrigine.ai / s.distressTot) * 100) : 0;
   const iqMedio = s.iqCount ? Math.round(s.iqSum / s.iqCount) : "—";
   const cards = [
-    ["Rilievi", s.nRilievi],
-    ["IQ medio", iqMedio],
-    ["Distress totali", s.distressTot],
-    ["Con foto", s.conFoto],
-    ["Distress da AI", `${s.perOrigine.ai} · ${aiPct}%`],
+    [t("stat_rilievi"), s.nRilievi],
+    [t("stat_iq_medio"), iqMedio],
+    [t("stat_distress_tot"), s.distressTot],
+    [t("stat_con_foto"), s.conFoto],
+    [t("stat_distress_ai"), `${s.perOrigine.ai} · ${aiPct}%`],
   ];
   return `<div class="kpi-grid">` + cards.map(([l, v]) =>
     `<div class="kpi"><div class="kpi-val mono">${v}</div><div class="kpi-lbl">${l}</div></div>`).join("") + `</div>`;
@@ -71,7 +67,7 @@ function kpi(s) {
 
 function donut(segments) {
   const total = segments.reduce((a, b) => a + b.value, 0);
-  if (!total) return `<div class="hint mono" style="color:var(--muted)">nessun dato</div>`;
+  if (!total) return `<div class="hint mono" style="color:var(--muted)">${t("stat_nodata")}</div>`;
   const r = 50, cx = 60, cy = 60, w = 18, C = 2 * Math.PI * r;
   let off = 0;
   const arcs = segments.map((g) => {
@@ -82,13 +78,13 @@ function donut(segments) {
   const leg = segments.map((g) =>
     `<div class="leg-row"><span class="leg-dot" style="background:${g.color}"></span><span class="leg-lbl">${g.label}</span><span class="leg-val mono">${g.value} · ${Math.round(g.value / total * 100)}%</span></div>`).join("");
   return `<div class="donut-wrap">
-    <svg viewBox="0 0 120 120" class="donut"><circle r="${r}" cx="${cx}" cy="${cy}" fill="none" stroke="var(--line)" stroke-width="${w}"/>${arcs}<text x="60" y="58" class="donut-tot">${total}</text><text x="60" y="74" class="donut-sub">totale</text></svg>
+    <svg viewBox="0 0 120 120" class="donut"><circle r="${r}" cx="${cx}" cy="${cy}" fill="none" stroke="var(--line)" stroke-width="${w}"/>${arcs}<text x="60" y="58" class="donut-tot">${total}</text><text x="60" y="74" class="donut-sub">${t("stat_totale")}</text></svg>
     <div class="donut-leg">${leg}</div>
   </div>`;
 }
 
 function barsColored(entries) {
-  if (!entries.length) return `<div class="hint mono" style="color:var(--muted)">nessun dato</div>`;
+  if (!entries.length) return `<div class="hint mono" style="color:var(--muted)">${t("stat_nodata")}</div>`;
   const max = Math.max(...entries.map((e) => e.value), 1);
   return `<div class="bars">` + entries.map((e) => `
     <div class="bar-row">
@@ -103,31 +99,31 @@ function card(title, inner, full) {
 }
 
 export async function renderStatistiche(root) {
-  root.innerHTML = `<div class="panel"><div class="mono" style="color:var(--muted)">caricamento…</div></div>`;
+  root.innerHTML = `<div class="panel"><div class="mono" style="color:var(--muted)">${t("cat_caricamento")}</div></div>`;
   let rilievi;
   try { rilievi = await db.rilievi.listConDistress(); }
   catch (e) { root.innerHTML = `<div class="panel mono" style="color:#ff8a8a">Errore: ${(e && e.message) || e}</div>`; return; }
 
   if (!rilievi.length) {
     root.innerHTML = `<div class="panel"><div class="placeholder">
-      <div class="big">Nessun dato</div>
-      <div class="small">Crea qualche rilievo per vedere le statistiche.</div></div></div>`;
+      <div class="big">${t("stat_nessun_dato")}</div>
+      <div class="small">${t("stat_nessun_sub")}</div></div></div>`;
     return;
   }
 
   const s = aggrega(rilievi);
 
-  const fasciaSeg = FASCE.filter((f) => s.perFascia[f.key]).map((f) => ({ label: f.label, value: s.perFascia[f.key], color: FASCIA_COLORE[f.key] || "#888" }));
-  const gravitaSeg = ["bassa", "media", "alta", "nessuna"].filter((k) => s.perGravita[k]).map((k) => ({ label: SEVL[k], value: s.perGravita[k], color: GRAVITA_COLORE[k] }));
+  const fasciaSeg = FASCE.filter((f) => s.perFascia[f.key]).map((f) => ({ label: labelFascia(f.key), value: s.perFascia[f.key], color: FASCIA_COLORE[f.key] || "#888" }));
+  const gravitaSeg = ["bassa", "media", "alta", "nessuna"].filter((k) => s.perGravita[k]).map((k) => ({ label: SEVL(k), value: s.perGravita[k], color: GRAVITA_COLORE[k] }));
   const origineSeg = [
-    { label: "Operatore", value: s.perOrigine.operatore || 0, color: ORIGINE_COLORE.operatore },
+    { label: t("sto_operatore"), value: s.perOrigine.operatore || 0, color: ORIGINE_COLORE.operatore },
     { label: "AI", value: s.perOrigine.ai || 0, color: ORIGINE_COLORE.ai },
   ].filter((e) => e.value);
 
   const tipoEntries = Object.values(s.perTipo).sort((a, b) => b.n - a.n).slice(0, 12)
     .map((t, i) => ({ label: t.etichetta, value: t.n, color: PALETTE[i % PALETTE.length] }));
   const stradaEntries = Object.entries(s.perStrada).map(([k, v], i) => ({ label: k, value: v, color: STRADA_COLORE[k] || PALETTE[i % PALETTE.length] }));
-  const stratoEntries = Object.entries(s.perStrato).map(([k, v], i) => ({ label: STRATO[k] || k, value: v, color: PALETTE[(i + 2) % PALETTE.length] }));
+  const stratoEntries = Object.entries(s.perStrato).map(([k, v], i) => ({ label: STRATO(k) || k, value: v, color: PALETTE[(i + 2) % PALETTE.length] }));
   const meseEntries = Object.keys(s.perMese).sort().map((m) => {
     const [y, mo] = m.split("-");
     return { label: `${mo}/${y.slice(2)}`, value: s.perMese[m], color: "#6db3ff" };
@@ -136,12 +132,12 @@ export async function renderStatistiche(root) {
   root.innerHTML =
     kpi(s) +
     `<div class="dash-grid">` +
-    card("IQ per fascia", donut(fasciaSeg)) +
-    card("Gravità", donut(gravitaSeg)) +
-    card("Origine dei distress", donut(origineSeg)) +
-    card("Distress per tipo", barsColored(tipoEntries), true) +
-    card("Rilievi per strada", barsColored(stradaEntries)) +
-    card("Rilievi per strato", barsColored(stratoEntries)) +
-    card("Rilievi per mese", barsColored(meseEntries), true) +
+    card(t("stat_iq_fascia"), donut(fasciaSeg)) +
+    card(t("stat_gravita"), donut(gravitaSeg)) +
+    card(t("stat_origine"), donut(origineSeg)) +
+    card(t("stat_per_tipo"), barsColored(tipoEntries), true) +
+    card(t("stat_per_strada"), barsColored(stradaEntries)) +
+    card(t("stat_per_strato"), barsColored(stratoEntries)) +
+    card(t("stat_per_mese"), barsColored(meseEntries), true) +
     `</div>`;
 }

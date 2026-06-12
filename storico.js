@@ -4,15 +4,11 @@
 
 import { db } from "./db.js";
 import { storage } from "./storage.js";
-import { calcolaIQ, fasciaDi, FASCE } from "./iq.js";
+import { calcolaIQ, fasciaDi, FASCE, labelFascia } from "./iq.js";
+import { t } from "./i18n.js";
 
 const UNITA = { m: "m", m2: "m²", conteggio: "n°" };
-const STRATO = {
-  drenante_nuovo: "Drenante nuovo",
-  drenante_maturo: "Drenante maturo",
-  non_drenante: "Non drenante",
-  non_determinabile: "Non determinabile",
-};
+const STRATO = (k) => (k ? t("strato_" + k) : "");
 
 let RILIEVI = [];
 let FILTRATI = [];
@@ -88,8 +84,8 @@ export async function renderStorico(root) {
   }
   if (!RILIEVI.length) {
     root.innerHTML = `<div class="panel"><div class="placeholder">
-      <div class="big">Nessun rilievo</div>
-      <div class="small">Vai su Rilievo per crearne uno.</div></div></div>`;
+      <div class="big">${t("sto_nessun")}</div>
+      <div class="small">${t("sto_nessun_sub")}</div></div></div>`;
     return;
   }
   FILTRATI = RILIEVI.slice();
@@ -101,11 +97,11 @@ export async function renderStorico(root) {
 function trendDelta(prevIq, iq) {
   if (prevIq == null || iq == null) return { key: "na", txt: "→", titolo: "" };
   const d = iq - prevIq;
-  if (d <= -3) return { key: "peggio", txt: `▼ ${d}`, titolo: `Peggioramento (${d} IQ)` };
-  if (d >= 3) return { key: "meglio", txt: `▲ +${d}`, titolo: `Miglioramento (+${d} IQ)` };
-  return { key: "stabile", txt: `= ${d >= 0 ? "+" : ""}${d}`, titolo: "Stabile" };
+  if (d <= -3) return { key: "peggio", txt: `▼ ${d}`, titolo: `${t("trend_peggio")} (${d} IQ)` };
+  if (d >= 3) return { key: "meglio", txt: `▲ +${d}`, titolo: `${t("trend_meglio")} (+${d} IQ)` };
+  return { key: "stabile", txt: `= ${d >= 0 ? "+" : ""}${d}`, titolo: t("trend_stabile") };
 }
-const ETICHETTA_TREND = { peggio: "Peggioramento", meglio: "Miglioramento", stabile: "Stabile", na: "—" };
+const ETICHETTA_TREND = (k) => ({ peggio: t("trend_peggio"), meglio: t("trend_meglio"), stabile: t("trend_stabile"), na: "—" })[k] || "—";
 
 // ordina la lista mettendo i figli (rilievi collegati) indentati sotto il capostipite
 function ordinaNidificato(list) {
@@ -138,7 +134,7 @@ function evolCell(r) {
 
 function rowsHtml(list) {
   if (!list.length) {
-    return `<tr><td colspan="10" class="mono" style="text-align:center;color:var(--muted);padding:22px">Nessun rilievo corrisponde ai filtri.</td></tr>`;
+    return `<tr><td colspan="10" class="mono" style="text-align:center;color:var(--muted);padding:22px">${t("sto_no_match")}</td></tr>`;
   }
   return ordinaNidificato(list).map(({ r, depth }) => {
     const rd = r.rilievo_distress || [];
@@ -162,8 +158,8 @@ function rowsHtml(list) {
 
 function opzioniDirezione() {
   const voci = filtri.strada ? (DIR[filtri.strada] || []) : [...DIR.A4, ...DIR.A31];
-  return `<option value="">Tutte</option>` +
-    voci.map(([v, l]) => `<option value="${v}"${filtri.direzione === v ? " selected" : ""}>${l}</option>`).join("");
+  return `<option value="">${t("sto_tutte")}</option>` +
+    voci.map(([v, l]) => `<option value="${v}"${filtri.direzione === v ? " selected" : ""}>${t("dir_" + v)}</option>`).join("");
 }
 
 function filtriMarkup() {
@@ -172,57 +168,57 @@ function filtriMarkup() {
     <div class="panel filtri-panel">
       <div class="filtri-grid">
         <div class="field">
-          <label>Strada</label>
+          <label>${t("ril_strada")}</label>
           <select id="f-strada">
-            <option value="">Tutte</option>
+            <option value="">${t("sto_tutte")}</option>
             <option value="A4"${sel("A4", filtri.strada)}>A4</option>
             <option value="A31"${sel("A31", filtri.strada)}>A31</option>
           </select>
         </div>
         <div class="field">
-          <label>Direzione</label>
+          <label>${t("ril_direzione")}</label>
           <select id="f-direzione">${opzioniDirezione()}</select>
         </div>
         <div class="field">
-          <label>Strato</label>
+          <label>${t("sto_strato_lbl")}</label>
           <select id="f-strato">
-            <option value="">Tutti</option>
-            <option value="drenante_nuovo"${sel("drenante_nuovo", filtri.strato)}>Drenante nuovo</option>
-            <option value="drenante_maturo"${sel("drenante_maturo", filtri.strato)}>Drenante maturo</option>
-            <option value="non_drenante"${sel("non_drenante", filtri.strato)}>Non drenante</option>
-            <option value="non_determinabile"${sel("non_determinabile", filtri.strato)}>Non determinabile</option>
+            <option value="">${t("sto_tutti")}</option>
+            <option value="drenante_nuovo"${sel("drenante_nuovo", filtri.strato)}>${t("strato_drenante_nuovo")}</option>
+            <option value="drenante_maturo"${sel("drenante_maturo", filtri.strato)}>${t("strato_drenante_maturo")}</option>
+            <option value="non_drenante"${sel("non_drenante", filtri.strato)}>${t("strato_non_drenante")}</option>
+            <option value="non_determinabile"${sel("non_determinabile", filtri.strato)}>${t("strato_non_determinabile")}</option>
           </select>
         </div>
         <div class="field">
-          <label>Distress</label>
+          <label>${t("sto_distress_lbl")}</label>
           <select id="f-origine">
-            <option value="">Qualsiasi</option>
-            <option value="ai"${sel("ai", filtri.origine)}>Con AI</option>
-            <option value="operatore"${sel("operatore", filtri.origine)}>Con operatore</option>
-            <option value="nessuno"${sel("nessuno", filtri.origine)}>Senza distress</option>
+            <option value="">${t("sto_qualsiasi")}</option>
+            <option value="ai"${sel("ai", filtri.origine)}>${t("sto_con_ai")}</option>
+            <option value="operatore"${sel("operatore", filtri.origine)}>${t("sto_con_op")}</option>
+            <option value="nessuno"${sel("nessuno", filtri.origine)}>${t("sto_senza")}</option>
           </select>
         </div>
         <div class="field">
           <label>IQ</label>
           <select id="f-iq">
-            <option value="">Tutte le fasce</option>
-            <option value="ottimo"${sel("ottimo", filtri.iq)}>Ottimo (≥90)</option>
-            <option value="buono"${sel("buono", filtri.iq)}>Buono (78–89)</option>
-            <option value="discreto"${sel("discreto", filtri.iq)}>Discreto (64–77)</option>
-            <option value="scarso"${sel("scarso", filtri.iq)}>Scarso (50–63)</option>
-            <option value="critico"${sel("critico", filtri.iq)}>Critico (&lt;50)</option>
+            <option value="">${t("sto_tutte_fasce")}</option>
+            <option value="ottimo"${sel("ottimo", filtri.iq)}>${labelFascia("ottimo")} (≥90)</option>
+            <option value="buono"${sel("buono", filtri.iq)}>${labelFascia("buono")} (78–89)</option>
+            <option value="discreto"${sel("discreto", filtri.iq)}>${labelFascia("discreto")} (64–77)</option>
+            <option value="scarso"${sel("scarso", filtri.iq)}>${labelFascia("scarso")} (50–63)</option>
+            <option value="critico"${sel("critico", filtri.iq)}>${labelFascia("critico")} (&lt;50)</option>
           </select>
         </div>
         <div class="field">
-          <label>Dal</label>
+          <label>${t("sto_dal")}</label>
           <input type="date" id="f-da" value="${filtri.da}">
         </div>
         <div class="field">
-          <label>Al</label>
+          <label>${t("sto_al")}</label>
           <input type="date" id="f-a" value="${filtri.a}">
         </div>
       </div>
-      <button type="button" class="btn btn-ghost" id="f-reset">Azzera filtri</button>
+      <button type="button" class="btn btn-ghost" id="f-reset">${t("sto_azzera")}</button>
     </div>`;
 }
 
@@ -232,11 +228,11 @@ function markup() {
     <div class="storico-bar">
       <span class="sel-count mono" id="sel-count">0 selezionati</span>
       <div class="bar-actions">
-        <button type="button" class="btn btn-ghost" id="btn-iq">Ricalcola IQ</button>
-        <button type="button" class="btn btn-ghost" id="btn-kmz">Esporta KMZ</button>
-        <button type="button" class="btn btn-ghost" id="btn-pdf">Esporta PDF</button>
-        <button type="button" class="btn btn-ghost" id="btn-export">Esporta CSV</button>
-        <button type="button" class="btn btn-danger" id="btn-del" disabled>Elimina selezionati</button>
+        <button type="button" class="btn btn-ghost" id="btn-iq">${t("sto_ricalcola")}</button>
+        <button type="button" class="btn btn-ghost" id="btn-kmz">${t("sto_exp_kmz")}</button>
+        <button type="button" class="btn btn-ghost" id="btn-pdf">${t("sto_exp_pdf")}</button>
+        <button type="button" class="btn btn-ghost" id="btn-export">${t("sto_exp_csv")}</button>
+        <button type="button" class="btn btn-danger" id="btn-del" disabled>${t("sto_elimina")}</button>
       </div>
     </div>
     <div class="panel" style="padding:0;overflow:hidden">
@@ -244,8 +240,8 @@ function markup() {
         <table class="data-table">
           <thead><tr>
             <th class="sel-cell"><input type="checkbox" id="sel-all"></th>
-            <th>ID</th><th>Data</th><th>Foto</th><th>Ubicazione</th><th>Coordinate</th>
-            <th>Distress operatore</th><th>Distress AI</th><th>IQ</th><th>Evol.</th>
+            <th>ID</th><th>${t("sto_th_data")}</th><th>${t("ril_foto")}</th><th>${t("sto_th_ubic")}</th><th>${t("sto_th_coord")}</th>
+            <th>${t("sto_th_dop")}</th><th>${t("sto_th_dai")}</th><th>IQ</th><th>${t("sto_th_evol")}</th>
           </tr></thead>
           <tbody id="storico-body">${rowsHtml(FILTRATI)}</tbody>
         </table>
@@ -372,7 +368,7 @@ function wire(root) {
 
 async function ricalcolaIQ(root) {
   const btn = root.querySelector("#btn-iq");
-  btn.disabled = true; const testo = btn.textContent; btn.textContent = "ricalcolo…";
+  btn.disabled = true; const testo = btn.textContent; btn.textContent = t("sto_ricalcolo");
   try {
     for (const r of RILIEVI) {
       const ris = iqDiRilievo(r);
@@ -383,7 +379,7 @@ async function ricalcolaIQ(root) {
     }
     applicaFiltri(root);
   } catch (e) {
-    alert("Errore nel ricalcolo IQ: " + ((e && e.message) || e));
+    alert((t("sto_err_ricalc") + ": ") + ((e && e.message) || e));
   } finally {
     btn.disabled = false; btn.textContent = testo;
   }
@@ -425,7 +421,7 @@ function esportaCSV() {
 async function eliminaSelezionati() {
   const ids = [...selezione];
   if (!ids.length) return;
-  if (!confirm(`Eliminare ${ids.length} rilievo/i selezionati? L'operazione è definitiva.`)) return;
+  if (!confirm(`${t("sto_conf_elim_a")} ${ids.length} ${t("sto_conf_elim_b")}`)) return;
   const paths = [];
   RILIEVI.filter((r) => selezione.has(r.id)).forEach((r) => {
     if (r.foto_id) paths.push(r.foto_id);
@@ -436,7 +432,7 @@ async function eliminaSelezionati() {
     for (const p of paths) { try { await storage.remove(p); } catch { /* best-effort */ } }
     await renderStorico(rootEl);
   } catch (e) {
-    alert("Errore nell'eliminazione: " + ((e && e.message) || e));
+    alert((t("sto_err_elim") + ": ") + ((e && e.message) || e));
   }
 }
 
@@ -493,24 +489,24 @@ function evoluzioneHtml(r) {
     });
     timeline = `<div class="evo-timeline">${inner}</div>`;
     const c = trendDelta(cat[0].iq, cat[cat.length - 1].iq);
-    somma = `<div class="evo-somma trend-${c.key}">Tendenza complessiva: <b>${ETICHETTA_TREND[c.key]}</b> (IQ ${cat[0].iq != null ? cat[0].iq : "—"} → ${cat[cat.length - 1].iq != null ? cat[cat.length - 1].iq : "—"})</div>`;
+    somma = `<div class="evo-somma trend-${c.key}">${t("sto_tend_compl")}: <b>${ETICHETTA_TREND(c.key)}</b> (IQ ${cat[0].iq != null ? cat[0].iq : "—"} → ${cat[cat.length - 1].iq != null ? cat[cat.length - 1].iq : "—"})</div>`;
   } else {
-    timeline = `<div class="v" style="color:var(--muted)">Questo rilievo non è ancora collegato a una catena.</div>`;
+    timeline = `<div class="v" style="color:var(--muted)">${t("sto_no_catena")}</div>`;
   }
   const parent = r.evoluzione_di ? RILIEVI.find((x) => x.id === r.evoluzione_di) : null;
   const cand = candidati(r);
   let azione;
   if (parent) {
-    azione = `<div class="evo-link mono">Evoluzione di: ${dataBreve(parent)} · ${String(parent.id).slice(0, 8)}
-      <button class="btn evo-unlink">Scollega</button></div>`;
+    azione = `<div class="evo-link mono">${t("sto_evol_di")}: ${dataBreve(parent)} · ${String(parent.id).slice(0, 8)}
+      <button class="btn evo-unlink">${t("sto_scollega")}</button></div>`;
   } else if (cand.length) {
     azione = `<div class="evo-link">
       <select class="evo-sel">${cand.map((c) => `<option value="${c.id}">${dataBreve(c)} · ${ubicazione(c)} · IQ ${c.iq != null ? c.iq : "—"}</option>`).join("")}</select>
-      <button class="btn evo-do">Collega come evoluzione</button></div>`;
+      <button class="btn evo-do">${t("sto_collega")}</button></div>`;
   } else {
-    azione = `<div class="v" style="color:var(--muted)">Nessun rilievo precedente compatibile (stessa strada/direzione/corsia, entro 30 m, data anteriore).</div>`;
+    azione = `<div class="v" style="color:var(--muted)">${t("sto_no_cand")}</div>`;
   }
-  return `<div class="m-field"><div class="k">Evoluzione</div>${timeline}${somma}${azione}</div>`;
+  return `<div class="m-field"><div class="k">${t("sto_evoluzione")}</div>${timeline}${somma}${azione}</div>`;
 }
 
 function apriDettaglio(id) {
@@ -520,7 +516,7 @@ function apriDettaglio(id) {
   const campo = (k, v) => `<div class="m-field"><div class="k">${k}</div><div class="v">${v}</div></div>`;
   const blocco = (origine, label) => {
     const items = rd.filter((x) => x.origine === origine);
-    if (!items.length) return `<div class="m-field"><div class="k">${label}</div><div class="v" style="color:var(--muted)">nessuno</div></div>`;
+    if (!items.length) return `<div class="m-field"><div class="k">${label}</div><div class="v" style="color:var(--muted)">${t("sto_nessuno")}</div></div>`;
     const lis = items.map((x) => {
       const u = UNITA[x.estensione_unita] || x.estensione_unita || "";
       const est = x.estensione_valore != null ? ` — ${x.estensione_valore} ${u}` : "";
@@ -533,16 +529,16 @@ function apriDettaglio(id) {
   ov.className = "modal-overlay";
   ov.innerHTML = `
     <div class="modal" role="dialog" aria-modal="true">
-      <div class="m-head"><h3>Rilievo ${String(r.id).slice(0, 8)}</h3>
-        <button class="m-close" aria-label="Chiudi">×</button></div>
+      <div class="m-head"><h3>${t("sto_rilievo_w")} ${String(r.id).slice(0, 8)}</h3>
+        <button class="m-close" aria-label="${t("chiudi")}">×</button></div>
       <div class="m-body">
         <div class="m-meta"><span>${dataOra(r)}</span><span>IQ: ${iqCell(r.iq)}</span></div>
-        ${campo("Ubicazione", ubicazione(r))}
-        ${campo("Coordinate", coord(r))}
-        ${campo("Strato", STRATO[r.strato] || r.strato || "—")}
-        ${r.foto_id ? `<div class="m-field"><div class="k">Foto</div><img class="foto-img" src="${storage.url(r.foto_id)}" alt=""></div>` : ""}
-        ${blocco("operatore", "Distress operatore")}
-        ${blocco("ai", "Distress AI")}
+        ${campo(t("sto_th_ubic"), ubicazione(r))}
+        ${campo(t("sto_th_coord"), coord(r))}
+        ${campo(t("sto_strato_lbl"), STRATO(r.strato) || r.strato || "—")}
+        ${r.foto_id ? `<div class="m-field"><div class="k">${t("ril_foto")}</div><img class="foto-img" src="${storage.url(r.foto_id)}" alt=""></div>` : ""}
+        ${blocco("operatore", t("sto_th_dop"))}
+        ${blocco("ai", t("sto_th_dai"))}
         ${evoluzioneHtml(r)}
       </div>
     </div>`;
@@ -559,7 +555,7 @@ function apriDettaglio(id) {
       await db.rilievi.update(r.id, { evoluzione_di: parentId });
       r.evoluzione_di = parentId;
       chiudi(); applicaFiltri(rootEl); apriDettaglio(r.id);
-    } catch (e) { doBtn.disabled = false; alert("Errore: " + ((e && e.message) || e)); }
+    } catch (e) { doBtn.disabled = false; alert((t("ril_errore") + ": ") + ((e && e.message) || e)); }
   });
   const unBtn = ov.querySelector(".evo-unlink");
   if (unBtn) unBtn.addEventListener("click", async () => {
@@ -568,7 +564,7 @@ function apriDettaglio(id) {
       await db.rilievi.update(r.id, { evoluzione_di: null });
       r.evoluzione_di = null;
       chiudi(); applicaFiltri(rootEl); apriDettaglio(r.id);
-    } catch (e) { unBtn.disabled = false; alert("Errore: " + ((e && e.message) || e)); }
+    } catch (e) { unBtn.disabled = false; alert((t("ril_errore") + ": ") + ((e && e.message) || e)); }
   });
 
   document.addEventListener("keydown", onEsc);
@@ -631,7 +627,7 @@ const KML_COLORE = { ottimo: "ff72c138", buono: "ff3bcc9c", discreto: "ff00c4ff"
 
 async function esportaKMZ(btn) {
   const conGps = righeEsporta().filter((r) => r.gps_lat != null && r.gps_lon != null);
-  if (!conGps.length) { alert("Nessun rilievo con coordinate GPS da esportare in KMZ."); return; }
+  if (!conGps.length) { alert(t("sto_no_gps")); return; }
   const testo = btn.textContent; btn.disabled = true; btn.textContent = "KMZ…";
   try {
     const enc = new TextEncoder();
@@ -643,8 +639,8 @@ async function esportaKMZ(btn) {
       `<BalloonStyle><bgColor>ff141414</bgColor><textColor>ffeaeaea</textColor><text>$[description]</text></BalloonStyle></Style>`).join("");
     // legenda IQ a livello documento
     const legenda = `<![CDATA[<div style="font-family:Arial,sans-serif;background:#141414;color:#eaeaea;padding:10px 12px;width:220px">
-      <div style="font-weight:bold;margin-bottom:8px">Legenda IQ</div>
-      ${FASCE.map((f) => `<div style="margin:3px 0"><span style="display:inline-block;width:13px;height:13px;border-radius:3px;background:${kmlToWeb(KML_COLORE[f.key])};margin-right:8px;vertical-align:middle"></span>${f.label}${f.min > 0 ? ` &#8805; ${f.min}` : ""}</div>`).join("")}
+      <div style="font-weight:bold;margin-bottom:8px">${t("sto_legenda")}</div>
+      ${FASCE.map((f) => `<div style="margin:3px 0"><span style="display:inline-block;width:13px;height:13px;border-radius:3px;background:${kmlToWeb(KML_COLORE[f.key])};margin-right:8px;vertical-align:middle"></span>${labelFascia(f.key)}${f.min > 0 ? ` &#8805; ${f.min}` : ""}</div>`).join("")}
     </div>]]>`;
     const placemarks = [];
     for (const r of conGps) {
@@ -666,8 +662,8 @@ async function esportaKMZ(btn) {
         `<div style="font-size:15px;font-weight:bold;margin:2px 0 6px">${ubicazione(r)}</div>` +
         `<span style="display:inline-block;background:${web};color:#000;font-weight:bold;padding:2px 9px;border-radius:5px">IQ ${ris.iq} · ${ris.fascia}</span>` +
         `<table style="margin-top:9px;font-size:12px;color:#cfcfcf;border-collapse:collapse">` +
-        `<tr><td style="padding:2px 0;color:#8a8a8a">Strato</td><td style="padding:2px 0 2px 12px">${STRATO[r.strato] || r.strato || "—"}</td></tr>` +
-        `<tr><td style="padding:2px 0;color:#8a8a8a">Operatore</td><td style="padding:2px 0 2px 12px">${distressPlain(r.rilievo_distress, "operatore") || "—"}</td></tr>` +
+        `<tr><td style="padding:2px 0;color:#8a8a8a">${t("sto_strato_lbl")}</td><td style="padding:2px 0 2px 12px">${STRATO(r.strato) || r.strato || "—"}</td></tr>` +
+        `<tr><td style="padding:2px 0;color:#8a8a8a">${t("sto_operatore")}</td><td style="padding:2px 0 2px 12px">${distressPlain(r.rilievo_distress, "operatore") || "—"}</td></tr>` +
         `<tr><td style="padding:2px 0;color:#8a8a8a">AI</td><td style="padding:2px 0 2px 12px">${distressPlain(r.rilievo_distress, "ai") || "—"}</td></tr>` +
         `</table></div>]]>`;
       placemarks.push(`<Placemark><name>IQ ${ris.iq}</name><styleUrl>#iq-${ris.fasciaKey}</styleUrl><description>${desc}</description><Point><coordinates>${Number(r.gps_lon)},${Number(r.gps_lat)},0</coordinates></Point></Placemark>`);
@@ -685,12 +681,12 @@ async function esportaKMZ(btn) {
         const y = top + i * rowH;
         ctx.fillStyle = kmlToWeb(KML_COLORE[f.key]); ctx.fillRect(12, y, 15, 15);
         ctx.fillStyle = "#dcdcdc";
-        ctx.fillText(`${f.label}${f.min > 0 ? ` \u2265 ${f.min}` : ""}`, 36, y + 12);
+        ctx.fillText(`${labelFascia(f.key)}${f.min > 0 ? ` \u2265 ${f.min}` : ""}`, 36, y + 12);
       });
       const blobL = await new Promise((res) => cv.toBlob(res, "image/png"));
       if (blobL) {
         files.push({ name: "files/legenda.png", data: new Uint8Array(await blobL.arrayBuffer()) });
-        screenOverlay = `<ScreenOverlay><name>Legenda IQ</name><Icon><href>files/legenda.png</href></Icon>` +
+        screenOverlay = `<ScreenOverlay><name>${t("sto_legenda")}</name><Icon><href>files/legenda.png</href></Icon>` +
           `<overlayXY x="0" y="1" xunits="fraction" yunits="fraction"/>` +
           `<screenXY x="12" y="12" xunits="pixels" yunits="insetPixels"/>` +
           `<size x="${W}" y="${H}" xunits="pixels" yunits="pixels"/></ScreenOverlay>`;
@@ -701,7 +697,7 @@ async function esportaKMZ(btn) {
     scaricaBlob(new Blob([zipStore(files)], { type: "application/vnd.google-earth.kmz" }),
       `distressiq_${new Date().toISOString().slice(0, 10)}.kmz`);
   } catch (e) {
-    alert("Errore KMZ: " + ((e && e.message) || e));
+    alert((t("sto_err_kmz") + ": ") + ((e && e.message) || e));
   } finally {
     btn.disabled = false; btn.textContent = testo;
   }
@@ -709,14 +705,14 @@ async function esportaKMZ(btn) {
 
 function esportaPDF() {
   const righe = righeEsporta();
-  if (!righe.length) { alert("Nessun rilievo da esportare."); return; }
+  if (!righe.length) { alert(t("sto_no_exp")); return; }
   const iqMedio = Math.round(righe.reduce((a, r) => a + iqDiRilievo(r).iq, 0) / righe.length);
   const rows = righe.map((r) => {
     const ris = iqDiRilievo(r);
     const thumb = r.thumb_path ? `<img src="${storage.url(r.thumb_path)}" />` : "";
     return `<tr>
       <td>${thumb}</td><td>${dataOra(r)}</td><td>${ubicazione(r)}</td>
-      <td>${STRATO[r.strato] || r.strato || "—"}</td>
+      <td>${STRATO(r.strato) || r.strato || "—"}</td>
       <td><span class="iqb iq-${ris.fasciaKey}">${ris.iq}</span> ${ris.fascia}</td>
       <td>${distressPlain(r.rilievo_distress, "operatore") || "—"}</td>
       <td>${distressPlain(r.rilievo_distress, "ai") || "—"}</td>
@@ -736,14 +732,14 @@ function esportaPDF() {
     .iq-ottimo{background:#38c172}.iq-buono{background:#9ccc3b}.iq-discreto{background:#ffc400}.iq-scarso{background:#ff8c1a}.iq-critico{background:#e5484d;color:#fff}
     @media print{ .noprint{display:none} }
   </style></head><body>
-  <div class="head"><div class="brand">DistressIQ <small>Report rilievi pavimentazione</small></div>
-    <div class="meta">${new Date().toLocaleString("it-IT")}<br/>${righe.length} rilievi</div></div>
-  <div class="kpis"><div class="kpi">IQ medio<b>${iqMedio}</b></div><div class="kpi">Rilievi<b>${righe.length}</b></div></div>
-  <table><thead><tr><th>Foto</th><th>Data</th><th>Ubicazione</th><th>Strato</th><th>IQ</th><th>Distress operatore</th><th>Distress AI</th></tr></thead><tbody>${rows}</tbody></table>
-  <p class="noprint" style="margin-top:16px;color:#666;font-size:12px">Usa la stampa del browser e scegli "Salva come PDF".</p>
+  <div class="head"><div class="brand">DistressIQ <small>${t("sto_report_sub")}</small></div>
+    <div class="meta">${new Date().toLocaleString("it-IT")}<br/>${righe.length} ${t("stat_rilievi")}</div></div>
+  <div class="kpis"><div class="kpi">${t("stat_iq_medio")}<b>${iqMedio}</b></div><div class="kpi">${t("stat_rilievi")}<b>${righe.length}</b></div></div>
+  <table><thead><tr><th>${t("ril_foto")}</th><th>${t("sto_th_data")}</th><th>${t("sto_th_ubic")}</th><th>${t("sto_strato_lbl")}</th><th>IQ</th><th>${t("sto_th_dop")}</th><th>${t("sto_th_dai")}</th></tr></thead><tbody>${rows}</tbody></table>
+  <p class="noprint" style="margin-top:16px;color:#666;font-size:12px">${t("sto_pdf_stampa")}</p>
   </body></html>`;
   const w = window.open("", "_blank");
-  if (!w) { alert("Consenti i popup per generare il PDF."); return; }
+  if (!w) { alert(t("sto_popup")); return; }
   w.document.open(); w.document.write(html); w.document.close(); w.focus();
   w.onload = () => { setTimeout(() => { try { w.print(); } catch {} }, 400); };
 }

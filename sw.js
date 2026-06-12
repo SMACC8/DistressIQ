@@ -1,6 +1,6 @@
 // Service worker · cache dell'app-shell per uso offline sul campo.
 // Incrementa CACHE quando cambi i file dello shell.
-const CACHE = "distressiq-v40";
+const CACHE = "distressiq-v51";
 const SHELL = [
   "./",
   "./index.html",
@@ -14,6 +14,8 @@ const SHELL = [
   "./statistiche.js",
   "./iq.js",
   "./gruppi.js",
+  "./i18n.js",
+  "./guardrail.js",
   "./training.js",
   "./calibrazione.js",
   "./vendor/supabase.js",

@@ -16,6 +16,10 @@ const DENSITA_DEFAULT = { bassa: 5, media: 20, alta: 50, unica: 20 };
 // combinazione PCI-like: il primo deduct pesa pieno, gli altri sempre meno
 const PESI_CDV = [1, 0.45, 0.35, 0.25, 0.15, 0.1];
 
+import { t } from "./i18n.js";
+
+export const labelFascia = (key) => t("fascia_" + key);
+
 export const FASCE = [
   { key: "ottimo",   label: "Ottimo",   min: 90 },
   { key: "buono",    label: "Buono",    min: 78 },
@@ -74,12 +78,12 @@ export function calcolaIQ(items) {
   const deducts = (items || []).map(deductDi).filter((d) => d > 0).sort((a, b) => b - a);
   if (!deducts.length) {
     const f = fasciaDi(100);
-    return { iq: 100, fascia: f.label, fasciaKey: f.key };
+    return { iq: 100, fascia: labelFascia(f.key), fasciaKey: f.key };
   }
   let cdv = 0;
   deducts.forEach((d, i) => { cdv += d * (PESI_CDV[i] != null ? PESI_CDV[i] : 0.05); });
   cdv = Math.min(100, cdv);
   const iq = Math.max(0, Math.round(100 - cdv));
   const f = fasciaDi(iq);
-  return { iq, fascia: f.label, fasciaKey: f.key };
+  return { iq, fascia: labelFascia(f.key), fasciaKey: f.key };
 }

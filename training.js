@@ -9,10 +9,11 @@
 // =====================================================================
 
 import { optgroupsDistress } from "./gruppi.js";
+import { t } from "./i18n.js";
 import { db, riconosciDistress } from "./db.js";
 import { storage } from "./storage.js";
 
-const SEVL = { bassa: "Bassa", media: "Media", alta: "Alta" };
+const SEVL = (k) => t("sev_" + k);
 const it = (o) => (o && (o.it || o.en || o.es)) || "";
 
 function ordina(arr) {
@@ -54,7 +55,7 @@ const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const precisione = (d) => Math.max(0, Math.round(100 - d * 120)); // 0=perfetto -> 100%
 
 export async function renderTraining(root) {
-  root.innerHTML = `<div class="panel"><div class="mono" style="color:var(--muted)">caricamento…</div></div>`;
+  root.innerHTML = `<div class="panel"><div class="mono" style="color:var(--muted)">${t("cat_caricamento")}</div></div>`;
   let esempi, catalogo;
   try {
     esempi = (await db.ml.list()).filter((e) => e.foto_id && e.distress);
@@ -64,8 +65,8 @@ export async function renderTraining(root) {
   }
   if (!esempi.length) {
     root.innerHTML = `<div class="panel"><div class="placeholder">
-      <div class="big">Banca esempi vuota</div>
-      <div class="small">Aggiungi qualche esempio in Calibrazione per allenarti qui.</div></div></div>`;
+      <div class="big">${t("tr_vuota")}</div>
+      <div class="small">${t("tr_vuota_sub")}</div></div></div>`;
     return;
   }
 
@@ -76,10 +77,9 @@ export async function renderTraining(root) {
   function start() {
     root.innerHTML = `
       <div class="panel tr-start">
-        <div class="tr-start-titolo">Training Room</div>
-        <p class="tr-start-p">Tocca la foto per segnare i distress che vedi (punti rossi <b>H1, H2…</b>) e assegna un tipo a ciascuno.
-        Poi <b>Sfida l'AI</b> (punti blu) e scopri la <b>Soluzione</b> (verde). Vinci chi azzecca il distress e si avvicina di più alla posizione.</p>
-        <button class="btn btn-primary" id="tr-inizia">Inizia ▸</button>
+        <div class="tr-start-titolo">${t("nav_training")}</div>
+        <p class="tr-start-p">${t("tr_intro")}</p>
+        <button class="btn btn-primary" id="tr-inizia">${t("tr_inizia")}</button>
       </div>`;
     root.querySelector("#tr-inizia").addEventListener("click", () => {
       ordine = mescola(esempi); idx = 0; punti.round = 0; punti.tu = 0; punti.ai = 0; punti.aiRound = 0;
@@ -90,8 +90,8 @@ export async function renderTraining(root) {
   function scoreHtml() {
     const aiTxt = punti.aiRound ? `${punti.ai}/${punti.aiRound}` : "—";
     return `<div class="tr-score">
-      <div class="tr-sc"><span class="tr-sc-l">Round</span><span class="tr-sc-v">${punti.round}</span></div>
-      <div class="tr-sc"><span class="tr-sc-l">Tu</span><span class="tr-sc-v">${punti.tu}/${punti.round}</span></div>
+      <div class="tr-sc"><span class="tr-sc-l">${t("tr_round")}</span><span class="tr-sc-v">${punti.round}</span></div>
+      <div class="tr-sc"><span class="tr-sc-l">${t("tr_tu")}</span><span class="tr-sc-v">${punti.tu}/${punti.round}</span></div>
       <div class="tr-sc"><span class="tr-sc-l">AI</span><span class="tr-sc-v">${aiTxt}</span></div>
     </div>`;
   }
@@ -112,14 +112,14 @@ export async function renderTraining(root) {
           <img class="tr-img" src="${storage.url(e.foto_id)}" alt="">
           <div class="tr-markers" id="tr-markers"></div>
         </div>
-        <div class="hint mono" id="tr-hint" style="margin-top:8px;color:var(--muted)">Tocca la foto per aggiungere un punto (H).</div>
+        <div class="hint mono" id="tr-hint" style="margin-top:8px;color:var(--muted)">${t("tr_hint")}</div>
         <div id="tr-lista" class="tr-lista"></div>
         <div class="tr-azioni">
-          <button class="btn" id="tr-undo" title="Rimuove l'ultimo punto rosso">Annulla punto</button>
-          <button class="btn" id="tr-ai" title="Esegue il riconoscimento AI sulla stessa foto, per confrontare la tua risposta con quella del modello">Sfida l'AI</button>
-          <button class="btn btn-primary" id="tr-sol" title="Rivela il distress corretto e la sua posizione (verde)">Soluzione</button>
-          <button class="btn" id="tr-next">Prossima ▸</button>
-          <button class="btn btn-ghost" id="tr-end">Termina</button>
+          <button class="btn" id="tr-undo" title="${t("tr_undo_t")}">${t("tr_undo")}</button>
+          <button class="btn" id="tr-ai" title="${t("tr_ai_t")}">${t("tr_sfida")}</button>
+          <button class="btn btn-primary" id="tr-sol" title="${t("tr_sol_t")}">${t("tr_sol")}</button>
+          <button class="btn" id="tr-next">${t("tr_next")}</button>
+          <button class="btn btn-ghost" id="tr-end">${t("tr_termina")}</button>
         </div>
         <div id="tr-esito" hidden></div>
       </div>`;
@@ -136,12 +136,12 @@ export async function renderTraining(root) {
       layer.innerHTML = s;
     }
     function disegnaLista() {
-      if (!userPunti.length) { lista.innerHTML = `<div class="mono" style="color:var(--muted);font-size:12px">Nessun punto. Tocca la foto.</div>`; return; }
+      if (!userPunti.length) { lista.innerHTML = `<div class="mono" style="color:var(--muted);font-size:12px">${t("tr_nopunti")}</div>`; return; }
       lista.innerHTML = userPunti.map((p, i) => `
         <div class="tr-row">
           <span class="tr-row-h">H${i + 1}</span>
           <select class="tr-row-d" data-i="${i}" ${fase === "risolto" ? "disabled" : ""}>
-            <option value="">— distress —</option>
+            <option value="">${t("tr_distress_opt")}</option>
             ${optgroupsDistress(catalogo, p.distress_id)}
           </select>
         </div>`).join("");
@@ -184,12 +184,12 @@ export async function renderTraining(root) {
       root.querySelector("#tr-hint").textContent = "";
 
       let posTxt = "";
-      if (gt.centro && mio) { const p = precisione(dist(mio, gt.centro)); posTxt = ` · posizione: precisione ${p}%`; }
-      else if (gt.centro && !mio) posTxt = " · posizione: —";
-      else posTxt = " · (questo esempio non ha posizione annotata)";
+      if (gt.centro && mio) { const p = precisione(dist(mio, gt.centro)); posTxt = ` · ${t("tr_pos_prec")} ${p}%`; }
+      else if (gt.centro && !mio) posTxt = ` · ${t("tr_pos")}: —`;
+      else posTxt = ` · ${t("tr_no_pos")}`;
 
-      mostraEsito(`<div class="tr-verdict ${distressOk ? "ok" : "no"}">Tu: ${distressOk ? "✓ distress giusto" : "✗ distress mancato"}</div>
-        <div class="tr-truth">Soluzione: <b>${gt.codice} · ${gt.nome}${gt.sev ? ` · ${SEVL[gt.sev]}` : ""}</b>${posTxt}</div>`);
+      mostraEsito(`<div class="tr-verdict ${distressOk ? "ok" : "no"}">${t("tr_tu")}: ${distressOk ? t("tr_distr_ok") : t("tr_distr_ko")}</div>
+        <div class="tr-truth">${t("tr_sol")}: <b>${gt.codice} · ${gt.nome}${gt.sev ? ` · ${SEVL(gt.sev)}` : ""}</b>${posTxt}</div>`);
       // disabilita i select
       lista.querySelectorAll("select").forEach((s) => s.disabled = true);
     }
@@ -197,7 +197,7 @@ export async function renderTraining(root) {
     // -------- sfida AI --------
     async function sfidaAI(btn) {
       if (fatto.ai) return;
-      btn.disabled = true; const t = btn.textContent; btn.textContent = "AI analizza…";
+      btn.disabled = true; const lbl0 = btn.textContent; btn.textContent = t("tr_ai_load");
       try {
         const resp = await fetch(storage.url(e.foto_id));
         const img = await b64(await ridimensiona(await resp.blob(), 1024, 0.8));
@@ -206,8 +206,8 @@ export async function renderTraining(root) {
           catalogo: catalogo.map((d) => ({ codice: d.codice, nome: it(d.nome) })),
         });
         if (res && res.error) {
-          mostraEsito(`<div class="tr-aimsg" style="color:#ff8a8a">${res.credito ? "Credito Google esaurito — riprova più tardi." : "AI non disponibile."}</div>`, true);
-          btn.disabled = false; btn.textContent = t; return;
+          mostraEsito(`<div class="tr-aimsg" style="color:#ff8a8a">${res.credito ? t("tr_credito") : t("tr_ai_nd")}</div>`, true);
+          btn.disabled = false; btn.textContent = lbl0; return;
         }
         fatto.ai = true;
         const lst = (res && res.distress) || [];
@@ -227,16 +227,16 @@ export async function renderTraining(root) {
         let posAI = "";
         if (gt.centro) {
           const match = aiPunti.find((p) => String(p.codice) === String(gt.codice));
-          if (match) posAI = ` · posizione: precisione ${precisione(dist(match, gt.centro))}%`;
+          if (match) posAI = ` · ${t("tr_pos_prec")} ${precisione(dist(match, gt.centro))}%`;
         }
         const nomeDi = (cod) => { const d = catalogo.find((c) => String(c.codice) === String(cod)); return d ? `${cod}·${it(d.nome)}` : cod; };
-        const elenco = lst.length ? lst.map((x, i) => `A${i + 1}=${nomeDi(x.codice)}${typeof x.confidenza === "number" ? ` ${Math.round(x.confidenza * 100)}%` : ""}`).join(", ") : "nulla";
+        const elenco = lst.length ? lst.map((x, i) => `A${i + 1}=${nomeDi(x.codice)}${typeof x.confidenza === "number" ? ` ${Math.round(x.confidenza * 100)}%` : ""}`).join(", ") : t("tr_nulla");
         const diag = res && res.descrizione ? `<div class="tr-diag">✦ ${String(res.descrizione)}</div>` : "";
-        mostraEsito(`<div class="tr-aimsg ${aiOk ? "ok" : "no"}">AI: ${aiOk ? "✓ ha riconosciuto il distress giusto" : "✗ ha indicato un altro distress"}${posAI}<br><span class="mono" style="color:var(--muted)">ha visto: ${elenco}</span></div>${diag}`, true);
-        btn.disabled = true; btn.textContent = "AI: analizzato";
+        mostraEsito(`<div class="tr-aimsg ${aiOk ? "ok" : "no"}">AI: ${aiOk ? t("tr_ai_ok") : t("tr_ai_ko")}${posAI}<br><span class="mono" style="color:var(--muted)">${t("tr_ha_visto")} ${elenco}</span></div>${diag}`, true);
+        btn.disabled = true; btn.textContent = t("tr_ai_done");
       } catch (err) {
         mostraEsito(`<div class="tr-aimsg" style="color:#ff8a8a">Errore: ${(err && err.message) || err}</div>`, true);
-        btn.disabled = false; btn.textContent = t;
+        btn.disabled = false; btn.textContent = lbl0;
       }
     }
 

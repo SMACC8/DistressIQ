@@ -11,87 +11,14 @@ import { renderStatistiche } from "./statistiche.js";
 import { renderCalibrazione } from "./calibrazione.js";
 import { renderTraining } from "./training.js";
 import { raggruppa } from "./gruppi.js";
+import { t, tx, setLingua, getLang } from "./i18n.js";
 
 const SB_HOST = (() => { try { return new URL(SUPABASE_URL).host; } catch { return SUPABASE_URL; } })();
 
-// ---------- i18n (predisposto per EN/ES, oggi solo IT) ----------
-const I18N = {
-  it: {
-    app_name: "DistressIQ",
-    status_online: "online",
-    status_offline: "offline",
-    in_costruzione: "Sezione in costruzione",
-    in_costruzione_sub: "Struttura e tema pronti. La logica arriva nei prossimi passi.",
-    conn_titolo: "Connessione",
-    conn_verifica: "verifica in corso…",
-    conn_ok: "Supabase connesso",
-    conn_ko: "connessione fallita",
-    conn_catalogo: "distress in catalogo",
-    catalogo_titolo: "Catalogo distress",
-    cat_caricamento: "caricamento…",
-    cat_errore: "errore nel caricamento del catalogo",
-    cat_vuoto: "Catalogo vuoto.",
-    cat_suggerimento: "Tocca una voce per descrizione, cause e soluzioni.",
-    badge_custom: "personalizzato",
-    badge_off: "disattivato",
-    lbl_codice: "Codice",
-    lbl_unita: "Unità di misura",
-    lbl_severita: "Severità",
-    lbl_applicabilita: "Applicabilità",
-    lbl_descrizione: "Descrizione",
-    lbl_cause: "Cause",
-    lbl_soluzioni: "Soluzioni",
-    sev_si: "bassa · media · alta",
-    sev_no: "nessuna",
-    chiudi: "Chiudi",
-    cat_nuovo: "+ Nuovo",
-    nf_titolo: "Nuovo distress personalizzato",
-    nf_codice: "Codice",
-    nf_nome: "Nome",
-    nf_unita: "Unità di misura",
-    nf_severita: "Ha livelli di severità (bassa/media/alta)",
-    nf_applicabilita: "Applicabilità (strati)",
-    nf_descrizione: "Descrizione",
-    nf_cause: "Cause",
-    nf_soluzioni: "Soluzioni",
-    nf_salva: "Crea distress",
-    nf_annulla: "Annulla",
-    nf_nome_obbl: "Il nome è obbligatorio.",
-    nf_cod_dup: "Codice già esistente.",
-    nf_salvataggio: "salvataggio…",
-    nf_errore: "Errore nel salvataggio",
-    lbl_stato: "Stato",
-    stato_attivo: "Attivo",
-    stato_off: "Disattivato",
-    tog_attiva: "Attiva",
-    tog_disattiva: "Disattiva",
-    nf_ai: "✦ Suggerisci con AI",
-    nf_ai_lavoro: "sto pensando…",
-    nf_ai_nome: "Inserisci prima il nome.",
-    nf_ai_errore: "Suggerimento non riuscito",
-    nav_rilievo: "Rilievo",
-    nav_storico: "Storico",
-    nav_statistiche: "Statistiche",
-    nav_training: "Training Room",
-    nav_calibrazione: "Calibrazione",
-    nav_impostazioni: "Impostazioni",
-  },
-  en: {}, // da compilare (fallback automatico all'italiano)
-  es: {}, // da compilare (fallback automatico all'italiano)
-};
-let lang = "it";
-try { const _l = localStorage.getItem("distressiq_lang"); if (_l && ["it", "en", "es"].includes(_l)) lang = _l; } catch { /* storage non disponibile */ }
-const t = (k) => (I18N[lang] && I18N[lang][k]) || I18N.it[k] || k;
-// testo localizzato da campi jsonb tipo {it, en, es}
-const tx = (obj) => (obj && (obj[lang] || obj.it)) || "";
 
-const UNITA = { m: "m (lineari)", m2: "m²", conteggio: "n° (conteggio)" };
-const STRATO = {
-  drenante_nuovo: "Drenante nuovo",
-  drenante_maturo: "Drenante maturo",
-  non_drenante: "Non drenante",
-  non_determinabile: "Non determinabile",
-};
+const UNITA = (k) => (k ? t("unita_" + k) : "");
+const STRATI_KEYS = ["drenante_nuovo", "drenante_maturo", "non_drenante", "non_determinabile"];
+const STRATO = (k) => (k ? t("strato_" + k) : "");
 
 // ---------- Icone (SVG inline, stroke = currentColor) ----------
 const ICON = {
@@ -133,15 +60,16 @@ function renderView(route) {
   const head = `
     <div class="view-head">
       <h1>${t(sec.label)}</h1>
-      <span class="tag mono">${sec.id}</span>
+      <span class="tag mono">DistressIQ</span>
       <span class="slogan">SviluPPAta da Sergio Moro</span>
     </div>`;
 
   if (sec.id === "impostazioni") {
-    content.innerHTML = head + impostazioniMarkup() + linguaMarkup() + ettometricaMarkup() + catalogoMarkup();
+    content.innerHTML = head + impostazioniMarkup() + modelloMarkup() + infoMarkup() + linguaMarkup() + ettometricaMarkup() + catalogoMarkup();
     verificaConnessione();           // prova concreta dello strato dati
     initEttometrica();               // upload CSV progressive
     initLingua();                    // selettore lingua
+    initModello();                   // selettore modello AI
     caricaCatalogo();                // lista distress cliccabile
   } else if (sec.id === "rilievo") {
     content.innerHTML = head + `<div id="rilievo-root"></div>`;
@@ -180,7 +108,7 @@ function impostazioniMarkup() {
       <h2 style="margin:0 0 14px;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">${t("conn_titolo")}</h2>
       <div class="mono" style="font-size:13px;line-height:2">
         <div>URL · <span style="color:var(--accent)">${SB_HOST}</span></div>
-        <div>Key · publishable (pubblica)</div>
+        <div>${t("conn_key")}</div>
         <div id="conn-stato">… ${t("conn_verifica")}</div>
       </div>
     </div>`;
@@ -199,18 +127,50 @@ async function verificaConnessione() {
   }
 }
 
-// ---------- Selettore lingua ----------
-function linguaMarkup() {
-  const opt = (v, l) => `<button type="button" class="lang-btn${lang === v ? " active" : ""}" data-lang="${v}">${l}</button>`;
+// ---------- Selettore modello AI (standard gratuito / pro a pagamento) ----------
+function modelloMarkup() {
+  let tier = "standard";
+  try { tier = localStorage.getItem("distressiq_model_tier") || "standard"; } catch {}
+  const opt = (v, l) => `<button type="button" class="lang-btn${tier === v ? " active" : ""}" data-tier="${v}">${l}</button>`;
   return `
     <div class="panel" style="margin-top:16px">
-      <h2 style="margin:0 0 10px;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Lingua</h2>
+      <h2 style="margin:0 0 10px;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">${t("imp_modello")}</h2>
+      <div class="lang-seg">${opt("standard", t("mod_standard"))}${opt("pro", t("mod_pro"))}</div>
+      <div class="mono" style="font-size:12px;color:var(--muted);margin-top:10px">${t("mod_nota")}</div>
+    </div>`;
+}
+function initModello() {
+  document.querySelectorAll("[data-tier]").forEach((b) =>
+    b.addEventListener("click", () => {
+      try { localStorage.setItem("distressiq_model_tier", b.dataset.tier); } catch {}
+      document.querySelectorAll("[data-tier]").forEach((x) => x.classList.toggle("active", x === b));
+    }));
+}
+
+// ---------- Info: come funziona + riferimenti ----------
+function infoMarkup() {
+  return `
+    <div class="panel" style="margin-top:16px">
+      <h2 style="margin:0 0 10px;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">${t("info_titolo")}</h2>
+      <div class="info-prose" style="font-size:13px;line-height:1.55">${t("info_come")}</div>
+      <h3 style="margin:16px 0 6px;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">${t("info_rif_titolo")}</h3>
+      <div class="info-prose" style="font-size:12.5px;line-height:1.5;color:var(--muted)">${t("info_rif")}</div>
+      <div class="hint mono" style="margin-top:10px">${t("info_nota")}</div>
+    </div>`;
+}
+
+// ---------- Selettore lingua ----------
+function linguaMarkup() {
+  const opt = (v, l) => `<button type="button" class="lang-btn${getLang() === v ? " active" : ""}" data-lang="${v}">${l}</button>`;
+  return `
+    <div class="panel" style="margin-top:16px">
+      <h2 style="margin:0 0 10px;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">${t("imp_lingua")}</h2>
       <div class="lang-seg">${opt("it", "Italiano")}${opt("en", "English")}${opt("es", "Español")}</div>
-      <div class="mono" style="font-size:12px;color:var(--muted);margin-top:10px">I nomi dei distress si traducono già. L'interfaccia sarà tradotta a breve: dove i testi mancano resta in italiano.</div>
+      <div class="mono" style="font-size:12px;color:var(--muted);margin-top:10px">${t("imp_lingua_nota")}</div>
     </div>`;
 }
 function initLingua() {
-  document.querySelectorAll(".lang-btn").forEach((b) =>
+  document.querySelectorAll("[data-lang]").forEach((b) =>
     b.addEventListener("click", () => setLang(b.dataset.lang)));
 }
 
@@ -218,14 +178,14 @@ function initLingua() {
 function ettometricaMarkup() {
   return `
     <div class="panel" style="margin-top:16px">
-      <h2 style="margin:0 0 6px;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Dati ettometrici (progressive)</h2>
-      <div class="mono" style="font-size:12px;color:var(--muted);margin-bottom:12px">CSV con colonne LAT;LON;STRADA;PROGRESSIVA (es. 217+700). Serve per convertire GPS↔progressiva nel Rilievo.</div>
+      <h2 style="margin:0 0 6px;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">${t("imp_etto_titolo")}</h2>
+      <div class="mono" style="font-size:12px;color:var(--muted);margin-bottom:12px">${t("imp_etto_desc")}</div>
       <div id="etto-stato" class="mono" style="font-size:13px;color:var(--muted);margin-bottom:12px">…</div>
       <input type="file" id="etto-file" accept=".csv,text/csv" hidden>
-      <button class="btn" id="etto-pick">Scegli CSV</button>
+      <button class="btn" id="etto-pick">${t("imp_etto_pick")}</button>
       <span class="hint mono" id="etto-pre" style="margin-left:10px"></span>
       <div style="margin-top:12px">
-        <button class="btn btn-primary" id="etto-carica" disabled>Carica nel database</button>
+        <button class="btn btn-primary" id="etto-carica" disabled>${t("imp_etto_carica")}</button>
         <span class="hint mono" id="etto-msg" style="margin-left:10px"></span>
       </div>
     </div>`;
@@ -258,8 +218,8 @@ async function initEttometrica() {
   const pre = document.getElementById("etto-pre");
   const carica = document.getElementById("etto-carica");
   const msg = document.getElementById("etto-msg");
-  try { const n = await db.ettometriche.count(); stato.textContent = n ? `${n} punti caricati.` : "Nessun dato ettometrico caricato."; }
-  catch { stato.textContent = "Stato non disponibile."; }
+  try { const n = await db.ettometriche.count(); stato.textContent = n ? `${n} ${t("imp_etto_punti")} ${t("imp_etto_caricati")}` : t("imp_etto_vuoto"); }
+  catch { stato.textContent = t("imp_etto_stato_ko"); }
 
   let righe = null;
   pick.addEventListener("click", () => file.click());
@@ -269,27 +229,27 @@ async function initEttometrica() {
     const reader = new FileReader();
     reader.onload = () => {
       righe = parseEtto(String(reader.result));
-      if (!righe.length) { pre.textContent = "Nessuna riga valida trovata."; carica.disabled = true; return; }
+      if (!righe.length) { pre.textContent = t("imp_etto_norighe"); carica.disabled = true; return; }
       const a4 = righe.filter((r) => r.strada === "A4").length, a31 = righe.filter((r) => r.strada === "A31").length;
-      pre.textContent = `${righe.length} punti (A4: ${a4}, A31: ${a31}) pronti.`;
+      pre.textContent = `${righe.length} ${t("imp_etto_punti")} (A4: ${a4}, A31: ${a31}) ${t("imp_etto_pronti")}`;
       carica.disabled = false;
     };
     reader.readAsText(f);
   });
   carica.addEventListener("click", async () => {
     if (!righe || !righe.length) return;
-    carica.disabled = true; msg.style.color = "var(--muted)"; msg.textContent = "svuoto i dati esistenti…";
+    carica.disabled = true; msg.style.color = "var(--muted)"; msg.textContent = t("imp_etto_svuoto");
     try {
       await db.ettometriche.clear();
       const BATCH = 500;
       for (let i = 0; i < righe.length; i += BATCH) {
-        msg.textContent = `carico ${Math.min(i + BATCH, righe.length)}/${righe.length}…`;
+        msg.textContent = `${t("imp_etto_carico")} ${Math.min(i + BATCH, righe.length)}/${righe.length}…`;
         await db.ettometriche.insertMany(righe.slice(i, i + BATCH));
       }
-      msg.style.color = "var(--ok)"; msg.textContent = `fatto: ${righe.length} punti caricati`;
-      stato.textContent = `${righe.length} punti caricati.`;
+      msg.style.color = "var(--ok)"; msg.textContent = `${t("imp_etto_fatto")} ${righe.length} ${t("imp_etto_punti")} ${t("imp_etto_caricati")}`;
+      stato.textContent = `${righe.length} ${t("imp_etto_punti")} ${t("imp_etto_caricati")}`;
     } catch (e) {
-      msg.style.color = "#ff8a8a"; msg.textContent = "Errore: " + ((e && e.message) ? e.message : e);
+      msg.style.color = "#ff8a8a"; msg.textContent = (t("ril_errore") + ": ") + ((e && e.message) ? e.message : e);
       carica.disabled = false;
     }
   });
@@ -328,7 +288,7 @@ async function caricaCatalogo() {
           <span class="cod">${d.codice ?? "—"}</span>
           <span class="nm">${tx(d.nome)}</span>
           <span class="cat-badges">${badges}</span>
-          <span class="meta">${UNITA[d.unita_misura] || d.unita_misura || ""}</span>
+          <span class="meta">${UNITA(d.unita_misura) || d.unita_misura || ""}</span>
         </button>`;
     };
     box.innerHTML = raggruppa(CATALOGO).map((g) =>
@@ -345,7 +305,7 @@ function apriDettaglio(id) {
   const d = CATALOGO.find((x) => x.id === id);
   if (!d) return;
   const campo = (k, v) => v ? `<div class="m-field"><div class="k">${k}</div><div class="v">${v}</div></div>` : "";
-  const appl = (d.applicabilita || []).map((s) => STRATO[s] || s).join(" · ");
+  const appl = (d.applicabilita || []).map((s) => STRATO(s) || s).join(" · ");
   const sev = d.ha_severita ? t("sev_si") : t("sev_no");
 
   const ov = document.createElement("div");
@@ -359,7 +319,7 @@ function apriDettaglio(id) {
       <div class="m-body">
         <div class="m-meta">
           <span>${t("lbl_codice")}: ${d.codice ?? "—"}</span>
-          <span>${t("lbl_unita")}: ${UNITA[d.unita_misura] || d.unita_misura || "—"}</span>
+          <span>${t("lbl_unita")}: ${UNITA(d.unita_misura) || d.unita_misura || "—"}</span>
           <span>${t("lbl_severita")}: ${sev}</span>
         </div>
         ${campo(t("lbl_applicabilita"), appl)}
@@ -408,8 +368,8 @@ function prossimoCodiceCustom() {
 function apriFormNuovo() {
   const ov = document.createElement("div");
   ov.className = "modal-overlay";
-  const strati = Object.entries(STRATO)
-    .map(([k, v]) => `<label class="chk"><input type="checkbox" value="${k}" checked> ${v}</label>`)
+  const strati = STRATI_KEYS
+    .map((k) => `<label class="chk"><input type="checkbox" value="${k}" checked> ${t("strato_" + k)}</label>`)
     .join("");
   ov.innerHTML = `
     <div class="modal" role="dialog" aria-modal="true">
@@ -422,13 +382,13 @@ function apriFormNuovo() {
           <div class="field"><label>${t("nf_codice")}</label><input id="nf-codice" value="${prossimoCodiceCustom()}"></div>
           <div class="field"><label>${t("nf_unita")}</label>
             <select id="nf-unita">
-              <option value="m2">m²</option>
-              <option value="m">m (lineari)</option>
-              <option value="conteggio">n° (conteggio)</option>
+              <option value="m2">${t("unita_m2")}</option>
+              <option value="m">${t("unita_m")}</option>
+              <option value="conteggio">${t("unita_conteggio")}</option>
             </select>
           </div>
         </div>
-        <div class="field" style="margin-top:14px"><label>${t("nf_nome")}</label><input id="nf-nome" placeholder="es. Incendio"></div>
+        <div class="field" style="margin-top:14px"><label>${t("nf_nome")}</label><input id="nf-nome" placeholder="${t("nf_nome_ph")}"></div>
         <div class="nf-ai-row">
           <button class="btn" id="nf-ai">${t("nf_ai")}</button>
           <span class="hint mono" id="nf-ai-stato"></span>
@@ -529,9 +489,8 @@ function currentRoute() {
 }
 function navigate() { renderView(currentRoute()); }
 function setLang(l) {
-  if (!["it", "en", "es"].includes(l) || l === lang) return;
-  lang = l;
-  try { localStorage.setItem("distressiq_lang", l); } catch { /* storage non disponibile */ }
+  if (l === getLang()) return;
+  setLingua(l);
   renderNav(); updateStatus(); navigate();
 }
 window.addEventListener("hashchange", navigate);

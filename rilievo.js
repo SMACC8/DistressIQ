@@ -7,6 +7,7 @@ import { db, riconosciDistress } from "./db.js";
 import { storage } from "./storage.js";
 import { calcolaIQ, fasciaDi } from "./iq.js";
 import { optgroupsDistress } from "./gruppi.js";
+import { t } from "./i18n.js";
 
 // ---- Conversione GPS <-> progressiva (proiezione sull'asse ettometrico) ----
 const _etto = {}; // cache: strada -> punti [{progressiva_m, lat, lon}]
@@ -168,94 +169,94 @@ export async function renderRilievo(root) {
 function markup() {
   return `
   <div class="panel form-panel">
-    <h2 class="sec-h">Localizzazione</h2>
+    <h2 class="sec-h">${t("ril_loc")}</h2>
     <div class="form-grid">
       <div class="field">
-        <label>Strada</label>
+        <label>${t("ril_strada")}</label>
         <select id="r-strada"><option value="">—</option>${opt("A4","A4")}${opt("A31","A31")}</select>
       </div>
       <div class="field">
-        <label>Direzione</label>
+        <label>${t("ril_direzione")}</label>
         <select id="r-direzione" disabled><option value="">—</option></select>
       </div>
       <div class="field">
-        <label>Corsia</label>
+        <label>${t("ril_corsia")}</label>
         <select id="r-corsia" disabled><option value="">—</option></select>
       </div>
       <div class="field">
-        <label>Progressiva (metri) <span class="prog-km mono" id="r-prog-fmt"></span></label>
-        <input id="r-prog" type="number" min="0" inputmode="numeric" placeholder="es. 217700" />
+        <label>${t("ril_prog")} <span class="prog-km mono" id="r-prog-fmt"></span></label>
+        <input id="r-prog" type="number" min="0" inputmode="numeric" placeholder="${t("ril_prog_ph")}" />
       </div>
     </div>
     <div class="form-grid">
       <div class="field">
-        <label>Latitudine</label>
+        <label>${t("ril_lat")}</label>
         <input id="r-lat" type="number" step="0.000001" placeholder="—" />
       </div>
       <div class="field">
-        <label>Longitudine</label>
+        <label>${t("ril_lon")}</label>
         <input id="r-lon" type="number" step="0.000001" placeholder="—" />
       </div>
       <div class="field">
         <label>&nbsp;</label>
-        <button type="button" class="btn btn-ghost" id="r-gps">Usa GPS</button>
+        <button type="button" class="btn btn-ghost" id="r-gps">${t("ril_gps")}</button>
         <div class="hint" id="r-gps-msg"></div>
       </div>
     </div>
   </div>
 
   <div class="panel form-panel">
-    <h2 class="sec-h">Foto</h2>
+    <h2 class="sec-h">${t("ril_foto")}</h2>
     <div class="foto-row">
       <label class="btn btn-ghost" style="cursor:pointer;display:inline-block">
-        Scegli o scatta foto
+        ${t("ril_foto_scegli")}
         <input id="r-foto" type="file" accept="image/*" hidden />
       </label>
       <span id="r-foto-name" class="hint" style="margin-left:12px"></span>
     </div>
     <div id="r-foto-prev" class="foto-prev"></div>
     <div style="margin-top:14px">
-      <button type="button" class="btn btn-primary" id="r-ai" disabled>Avvia riconoscimento AI</button>
+      <button type="button" class="btn btn-primary" id="r-ai" disabled>${t("ril_ai_avvia")}</button>
       <div id="r-ai-msg" class="hint" style="margin-top:8px"></div>
       <div id="r-ai-diag" class="ai-diag" hidden></div>
     </div>
   </div>
 
   <div class="panel form-panel">
-    <h2 class="sec-h">Pavimentazione</h2>
+    <h2 class="sec-h">${t("ril_pav")}</h2>
     <div class="form-grid">
       <div class="field">
-        <label>Strato superficiale</label>
+        <label>${t("ril_strato")}</label>
         <select id="r-strato"><option value="">—</option>${STRATI.map(([v,l])=>opt(v,l)).join("")}</select>
       </div>
     </div>
   </div>
 
   <div class="panel form-panel">
-    <h2 class="sec-h">Distress (operatore)</h2>
+    <h2 class="sec-h">${t("ril_distress_h")}</h2>
     <div class="form-grid">
       <div class="field">
-        <label>Tipo</label>
-        <select id="r-dtipo"><option value="">caricamento…</option></select>
+        <label>${t("ril_tipo")}</label>
+        <select id="r-dtipo"><option value="">${t("cat_caricamento")}</option></select>
       </div>
       <div class="field">
-        <label>Severità</label>
+        <label>${t("ril_sev")}</label>
         <select id="r-dsev"><option value="">—</option>${SEV.map(([v,l])=>opt(v,l)).join("")}</select>
       </div>
       <div class="field">
-        <label>Estensione (<span id="r-dunit">—</span>)</label>
+        <label>${t("ril_est")} (<span id="r-dunit">—</span>)</label>
         <input id="r-dest" type="number" step="0.01" min="0" placeholder="0" />
       </div>
       <div class="field">
         <label>&nbsp;</label>
-        <button type="button" class="btn btn-ghost" id="r-dadd">+ Aggiungi</button>
+        <button type="button" class="btn btn-ghost" id="r-dadd">${t("ril_add")}</button>
       </div>
     </div>
     <div id="r-dlist" class="chips"></div>
   </div>
 
   <div class="panel form-panel">
-    <button type="button" class="btn btn-primary" id="r-save">Salva rilievo</button>
+    <button type="button" class="btn btn-primary" id="r-save">${t("ril_salva")}</button>
     <div id="r-msg" class="mono" style="margin-top:12px;min-height:18px"></div>
     <div id="r-saved" hidden></div>
   </div>`;
@@ -295,28 +296,28 @@ function wire(root) {
   async function calcolaProgressiva() {
     ultimoScostamento = null;
     const s = strada.value;
-    if (!s) { gpsMsg.textContent = "Scegli prima la strada."; return; }
-    if (lat.value === "" || lon.value === "") { gpsMsg.textContent = "Servono le coordinate."; return; }
-    gpsMsg.textContent = "calcolo progressiva…";
+    if (!s) { gpsMsg.textContent = t("ril_m_strada_prima"); return; }
+    if (lat.value === "" || lon.value === "") { gpsMsg.textContent = t("ril_m_coord"); return; }
+    gpsMsg.textContent = t("ril_m_calc_prog");
     try {
       const r = await gpsToProgressiva(s, Number(lat.value), Number(lon.value));
-      if (!r) { gpsMsg.textContent = `Dati ettometrici assenti per ${s}: caricali in Impostazioni.`; return; }
+      if (!r) { gpsMsg.textContent = `${t("ril_etto_a")} ${s}${t("ril_etto_b")}`; return; }
       prog.value = r.progressiva_m; progFmt.textContent = fmtProg(r.progressiva_m);
       ultimoScostamento = r.scostamento_m;
-      gpsMsg.textContent = `progressiva calcolata · scostamento ${r.scostamento_m} m`;
-    } catch (e) { gpsMsg.textContent = "Errore: " + ((e && e.message) || e); }
+      gpsMsg.textContent = `${t("ril_prog_ok")} ${r.scostamento_m} m`;
+    } catch (e) { gpsMsg.textContent = (t("ril_errore") + ": ") + ((e && e.message) || e); }
   }
   async function calcolaCoordinate() {
     const s = strada.value;
-    if (!s) { gpsMsg.textContent = "Scegli prima la strada."; return; }
-    if (prog.value === "") { gpsMsg.textContent = "Inserisci la progressiva."; return; }
-    gpsMsg.textContent = "calcolo coordinate…";
+    if (!s) { gpsMsg.textContent = t("ril_m_strada_prima"); return; }
+    if (prog.value === "") { gpsMsg.textContent = t("ril_m_ins_prog"); return; }
+    gpsMsg.textContent = t("ril_m_calc_coord");
     try {
       const r = await progressivaToGps(s, Number(prog.value));
-      if (!r) { gpsMsg.textContent = `Dati ettometrici assenti per ${s}: caricali in Impostazioni.`; return; }
+      if (!r) { gpsMsg.textContent = `${t("ril_etto_a")} ${s}${t("ril_etto_b")}`; return; }
       lat.value = r.lat.toFixed(6); lon.value = r.lon.toFixed(6);
-      gpsMsg.textContent = "coordinate calcolate dalla progressiva";
-    } catch (e) { gpsMsg.textContent = "Errore: " + ((e && e.message) || e); }
+      gpsMsg.textContent = t("ril_m_coord_ok");
+    } catch (e) { gpsMsg.textContent = (t("ril_errore") + ": ") + ((e && e.message) || e); }
   }
   // conversione automatica: progressiva -> coordinate e coordinate -> progressiva
   prog.addEventListener("change", () => { if (strada.value && prog.value !== "") calcolaCoordinate(); });
@@ -324,15 +325,15 @@ function wire(root) {
   lon.addEventListener("change", () => { if (strada.value && lat.value !== "" && lon.value !== "") calcolaProgressiva(); });
 
   gpsBtn.addEventListener("click", () => {
-    if (!navigator.geolocation) { gpsMsg.textContent = "GPS non disponibile"; return; }
-    gpsMsg.textContent = "lettura…";
+    if (!navigator.geolocation) { gpsMsg.textContent = t("ril_m_gps_nd"); return; }
+    gpsMsg.textContent = t("ril_m_lettura");
     navigator.geolocation.getCurrentPosition(
       (p) => {
         lat.value = p.coords.latitude.toFixed(6); lon.value = p.coords.longitude.toFixed(6);
-        gpsMsg.textContent = "posizione acquisita";
+        gpsMsg.textContent = t("ril_m_pos_ok");
         if (strada.value) calcolaProgressiva();   // GPS -> progressiva automatica
       },
-      () => { gpsMsg.textContent = "GPS negato o non disponibile"; },
+      () => { gpsMsg.textContent = t("ril_m_gps_negato"); },
       { enableHighAccuracy: true, timeout: 10000 }
     );
   });
@@ -342,9 +343,17 @@ function wire(root) {
   function disegnaMarkers() {
     const layer = $("#r-foto-markers");
     if (!layer) return;
-    layer.innerHTML = lista.map((x, i) => (x.posizione && x.posizione.punti && x.posizione.punti[0])
-      ? `<div class="foto-mk${x.origine === "ai" ? " ai" : ""}" style="left:${x.posizione.punti[0][0] * 100}%;top:${x.posizione.punti[0][1] * 100}%">${i + 1}</div>`
-      : "").join("");
+    layer.innerHTML = lista.map((x, i) => {
+      const p = x.posizione;
+      if (!p || !p.punti || !p.punti.length) return "";
+      if (p.tipo === "area" && p.punti.length >= 2) {
+        const [[x1, y1], [x2, y2]] = p.punti;
+        const l = Math.min(x1, x2) * 100, t = Math.min(y1, y2) * 100;
+        const w = Math.abs(x2 - x1) * 100, h = Math.abs(y2 - y1) * 100;
+        return `<div class="foto-box${x.origine === "ai" ? " ai" : ""}" style="left:${l}%;top:${t}%;width:${w}%;height:${h}%"><span class="foto-box-tag">${x.origine === "ai" ? "AI" : (i + 1)}</span></div>`;
+      }
+      return `<div class="foto-mk${x.origine === "ai" ? " ai" : ""}" style="left:${p.punti[0][0] * 100}%;top:${p.punti[0][1] * 100}%">${i + 1}</div>`;
+    }).join("");
   }
   function showFotoPreview() {
     const prev = $("#r-foto-prev"), name = $("#r-foto-name");
@@ -352,7 +361,7 @@ function wire(root) {
     if (!fotoFile) { prev.innerHTML = ""; name.textContent = ""; return; }
     const url = URL.createObjectURL(fotoFile);
     prev.innerHTML = `<div class="foto-stage" id="r-foto-stage"><img src="${url}" class="foto-img" alt="anteprima" /><div class="foto-markers" id="r-foto-markers"></div></div>
-      <button type="button" class="btn btn-ghost" id="r-foto-rm">Rimuovi foto</button>`;
+      <button type="button" class="btn btn-ghost" id="r-foto-rm">${t("ril_m_rimuovi_foto")}</button>`;
     name.textContent = fotoFile.name || "";
     const stage = $("#r-foto-stage");
     stage.addEventListener("click", (ev) => {
@@ -382,7 +391,7 @@ function wire(root) {
       const d = catalogo.find((c) => String(c.codice) === String(x.codice));
       if (!d) return;
       const sev = ["bassa","media","alta"].includes(x.severita) ? x.severita : null;
-      lista.push({
+      const item = {
         distress_id: d.id,
         nome: `${d.codice} · ${(d.nome && d.nome.it) || ""}`,
         severita: d.ha_severita ? sev : null,
@@ -390,7 +399,17 @@ function wire(root) {
         estensione_unita: d.unita_misura,
         origine: "ai",
         confidenza: typeof x.confidenza === "number" ? x.confidenza : null,
-      });
+      };
+      // l'AI disegna da sola: box_2d = [ymin, xmin, ymax, xmax] in 0-1000
+      if (Array.isArray(x.box_2d) && x.box_2d.length === 4) {
+        const [ymin, xmin, ymax, xmax] = x.box_2d.map(Number);
+        const x1 = Math.min(xmin, xmax) / 1000, y1 = Math.min(ymin, ymax) / 1000;
+        const x2 = Math.max(xmin, xmax) / 1000, y2 = Math.max(ymin, ymax) / 1000;
+        if ([x1, y1, x2, y2].every((v) => v >= 0 && v <= 1)) {
+          item.posizione = { tipo: "area", punti: [[+x1.toFixed(4), +y1.toFixed(4)], [+x2.toFixed(4), +y2.toFixed(4)]] };
+        }
+      }
+      lista.push(item);
       n++;
     });
     renderChips();
@@ -399,7 +418,7 @@ function wire(root) {
 
   aiBtn.addEventListener("click", async () => {
     if (!fotoFile) return;
-    aiBtn.disabled = true; aiMsg.style.color = "var(--muted)"; aiMsg.textContent = "riconoscimento in corso…";
+    aiBtn.disabled = true; aiMsg.style.color = "var(--muted)"; aiMsg.textContent = t("ril_m_ric_corso");
     try {
       const blob = await ridimensiona(fotoFile, 1024, 0.8);
       const image = await blobToBase64(blob);
@@ -414,13 +433,13 @@ function wire(root) {
       const n = applicaAI(res || {});
       if (res && res.descrizione) {
         aiDiag.hidden = false;
-        aiDiag.innerHTML = `<div class="ai-diag-h">✦ Diagnosi AI</div><div class="ai-diag-t">${String(res.descrizione)}</div>`;
+        aiDiag.innerHTML = `<div class="ai-diag-h">${t("ril_ai_diag")}</div><div class="ai-diag-t">${String(res.descrizione)}</div>`;
       }
-      const rif = esempi.length ? ` · ${esempi.length} esempi` : "";
+      const rif = esempi.length ? ` · ${esempi.length} ${t("ril_esempi")}` : "";
       const mod = res && res._modello ? ` · ${res._modello}` : "";
-      aiMsg.style.color = "var(--ok)"; aiMsg.textContent = `riconoscimento completato · ${n} distress aggiunti${rif}${mod}`;
+      aiMsg.style.color = "var(--ok)"; aiMsg.textContent = `${t("ril_ric_ok")} · ${n} ${t("ril_aggiunti")}${rif}${mod}`;
     } catch (e) {
-      aiMsg.style.color = "#ff8a8a"; aiMsg.textContent = "Errore AI: " + ((e && e.message) || e);
+      aiMsg.style.color = "#ff8a8a"; aiMsg.textContent = (t("ril_errore_ai") + ": ") + ((e && e.message) || e);
     } finally {
       aiBtn.disabled = !fotoFile;
     }
@@ -430,24 +449,24 @@ function wire(root) {
     dlist.innerHTML = lista.map((x, i) => `
       <span class="chip">
         <strong>${x.nome}</strong>${x.severita ? ` · ${x.severita}` : ""}${x.estensione_valore != null ? ` · ${x.estensione_valore} ${UNITA[x.estensione_unita]||x.estensione_unita}` : ""}${x.origine === "ai" ? ` · <span style="color:var(--accent)">AI${x.confidenza != null ? " " + Math.round(x.confidenza*100) + "%" : ""}</span>` : ""}
-        <button type="button" class="chip-loc${x.posizione ? " set" : ""}" data-i="${i}" title="Ubica sulla foto">📍${x.posizione ? " " + (i + 1) : ""}</button>
+        <button type="button" class="chip-loc${x.posizione ? " set" : ""}" data-i="${i}" title="${t("ril_ubica")}">📍${x.posizione ? " " + (i + 1) : ""}</button>
         <button type="button" class="chip-x" data-i="${i}" aria-label="rimuovi">×</button>
       </span>`).join("");
     dlist.querySelectorAll(".chip-x").forEach((b) =>
       b.addEventListener("click", () => { lista.splice(Number(b.dataset.i),1); renderChips(); }));
     dlist.querySelectorAll(".chip-loc").forEach((b) =>
       b.addEventListener("click", () => {
-        if (!fotoFile) { msg.style.color = "#ff8a8a"; msg.textContent = "Carica prima una foto per ubicare i distress."; return; }
+        if (!fotoFile) { msg.style.color = "#ff8a8a"; msg.textContent = t("ril_m_ubica_prima"); return; }
         ubicaPer = Number(b.dataset.i);
         const stage = $("#r-foto-stage"); if (stage) stage.classList.add("placing");
-        msg.style.color = "var(--muted)"; msg.textContent = "Tocca la foto per posizionare il distress selezionato.";
+        msg.style.color = "var(--muted)"; msg.textContent = t("ril_m_tocca");
       }));
     disegnaMarkers();
   }
 
   dadd.addEventListener("click", () => {
     const d = catalogo.find((x) => x.id === dtipo.value);
-    if (!d) { msg.style.color="#ff8a8a"; msg.textContent="Seleziona un tipo di distress."; return; }
+    if (!d) { msg.style.color="#ff8a8a"; msg.textContent=t("ril_sel_tipo"); return; }
     lista.push({
       distress_id: d.id,
       nome: `${d.codice} · ${(d.nome && d.nome.it) || ""}`,
@@ -462,9 +481,9 @@ function wire(root) {
 
   saveBtn.addEventListener("click", async () => {
     if (!strada.value || !strato.value) {
-      msg.style.color="#ff8a8a"; msg.textContent="Compila almeno Strada e Strato superficiale."; return;
+      msg.style.color="#ff8a8a"; msg.textContent=t("ril_compila"); return;
     }
-    saveBtn.disabled = true; msg.style.color="var(--muted)"; msg.textContent="salvataggio…";
+    saveBtn.disabled = true; msg.style.color="var(--muted)"; msg.textContent=t("nf_salvataggio");
     const rilievo = {
       strato: strato.value,
       strada: strada.value,
@@ -493,31 +512,31 @@ function wire(root) {
     rilievo.iq_fascia = ris.fascia;
     try {
       if (fotoFile) {
-        msg.textContent = "elaborazione foto…";
+        msg.textContent = t("ril_m_elab_foto");
         const full = await ridimensiona(fotoFile, 1600, 0.8);
         const thumb = await ridimensiona(fotoFile, 320, 0.7);
         const base = (crypto.randomUUID ? crypto.randomUUID() : "f" + Date.now());
-        msg.textContent = "caricamento foto…";
+        msg.textContent = t("ril_m_caric_foto");
         await storage.put(full, `${base}.jpg`);
         await storage.put(thumb, `${base}_thumb.jpg`);
         rilievo.foto_id = `${base}.jpg`;
         rilievo.thumb_path = `${base}_thumb.jpg`;
-        msg.textContent = "salvataggio…";
+        msg.textContent = t("nf_salvataggio");
       }
       const salvati = lista.slice();   // snapshot prima del reset
       const r = await db.rilievi.createConDistress(rilievo, rows);
       msg.style.color = "var(--ok)";
-      msg.textContent = `✓ Rilievo salvato (id ${String(r.id).slice(0,8)}…) · ${rows.length} distress.`;
+      msg.textContent = `✓ ${t("ril_salv_ok")} (id ${String(r.id).slice(0,8)}…) · ${rows.length} distress.`;
 
       // riepilogo: badge IQ + distress individuati (così non serve aprire lo Storico)
       const iqHtml = `<div class="iq-line"><span class="iq-badge iq-${ris.fasciaKey}">IQ ${ris.iq}</span><span class="iq-fascia">${ris.fascia}</span></div>`;
       const distrHtml = salvati.length
-        ? `<div class="saved-title mono">Distress registrati</div><div class="saved-list">` +
+        ? `<div class="saved-title mono">${t("ril_saved_title")}</div><div class="saved-list">` +
           salvati.map((d) => {
             const sev = d.severita ? ` · sev. ${d.severita}` : "";
             const org = d.origine === "ai"
               ? `<span class="saved-tag ai">AI${typeof d.confidenza === "number" ? " " + Math.round(d.confidenza*100) + "%" : ""}</span>`
-              : `<span class="saved-tag op">operatore</span>`;
+              : `<span class="saved-tag op">${t("ril_saved_op")}</span>`;
             return `<div class="saved-item"><span class="saved-nome">${d.nome}</span><span class="saved-meta mono">${sev}</span>${org}</div>`;
           }).join("") + `</div>`
         : "";
@@ -529,7 +548,7 @@ function wire(root) {
       prog.value=""; progFmt.textContent="—"; lat.value=""; lon.value=""; gpsMsg.textContent=""; dest.value="";
     } catch (e) {
       msg.style.color = "#ff8a8a";
-      msg.textContent = "Errore nel salvataggio: " + ((e && e.message) ? e.message : e);
+      msg.textContent = (t("nf_errore") + ": ") + ((e && e.message) ? e.message : e);
     } finally {
       saveBtn.disabled = false;
     }
