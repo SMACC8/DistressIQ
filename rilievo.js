@@ -181,11 +181,15 @@ function markup() {
       </div>
       <div class="field">
         <label>${t("ril_corsia")}</label>
-        <select id="r-corsia" disabled><option value="">—</option></select>
+        <div id="r-corsia" class="corsie-chk"><span class="hint">${t("ril_corsia_hint")}</span></div>
       </div>
       <div class="field">
         <label>${t("ril_prog")} <span class="prog-km mono" id="r-prog-fmt"></span></label>
         <input id="r-prog" type="number" min="0" inputmode="numeric" placeholder="${t("ril_prog_ph")}" />
+      </div>
+      <div class="field">
+        <label>${t("ril_data")}</label>
+        <input id="r-data" type="datetime-local" />
       </div>
     </div>
     <div class="form-grid">
@@ -257,6 +261,7 @@ function markup() {
 
   <div class="panel form-panel">
     <button type="button" class="btn btn-primary" id="r-save">${t("ril_salva")}</button>
+    <button type="button" class="btn btn-ghost" id="r-nuovo" style="margin-left:8px">${t("ril_nuovo")}</button>
     <div id="r-msg" class="mono" style="margin-top:12px;min-height:18px"></div>
     <div id="r-saved" hidden></div>
   </div>`;
@@ -271,6 +276,10 @@ function wire(root) {
   const dtipo=$("#r-dtipo"), dsev=$("#r-dsev"), dest=$("#r-dest"), dunit=$("#r-dunit");
   const dadd=$("#r-dadd"), dlist=$("#r-dlist");
   const saveBtn=$("#r-save"), msg=$("#r-msg"), savedBox=$("#r-saved");
+  const dataInput=$("#r-data"), nuovoBtn=$("#r-nuovo");
+  const oraLocaleISO = () => { const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,16); };
+  const corsieSelezionate = () => { const v=[...corsia.querySelectorAll("input:checked")].map((i)=>i.value); return v.length ? v.join(",") : null; };
+  if (dataInput) dataInput.value = oraLocaleISO();
 
   dtipo.innerHTML = `<option value="">—</option>` + optgroupsDistress(catalogo);
 
@@ -286,8 +295,10 @@ function wire(root) {
   strada.addEventListener("change", () => {
     const s = strada.value;
     dir.innerHTML = `<option value="">—</option>` + (STRADA_DIR[s]||[]).map(([v,l])=>opt(v,l)).join("");
-    corsia.innerHTML = `<option value="">—</option>` + (STRADA_CORSIE[s]||[]).map((c)=>opt(c,c)).join("");
-    dir.disabled = !s; corsia.disabled = !s;
+    corsia.innerHTML = s
+      ? (STRADA_CORSIE[s]||[]).map((c)=>`<label class="chk"><input type="checkbox" value="${c}"> ${c}</label>`).join("")
+      : `<span class="hint">${t("ril_corsia_hint")}</span>`;
+    dir.disabled = !s;
   });
 
   prog.addEventListener("input", () => progFmt.textContent = fmtProg(prog.value));
@@ -488,13 +499,14 @@ function wire(root) {
       strato: strato.value,
       strada: strada.value,
       direzione: dir.value || null,
-      corsia: corsia.value === "" ? null : Number(corsia.value),
+      corsia: corsieSelezionate(),
       progressiva_m: prog.value === "" ? null : Number(prog.value),
       progressiva_origine: "manuale",
       scostamento_m: ultimoScostamento,
       gps_lat: lat.value === "" ? null : Number(lat.value),
       gps_lon: lon.value === "" ? null : Number(lon.value),
     };
+    if (dataInput && dataInput.value) rilievo.created_at = new Date(dataInput.value).toISOString();
     const rows = lista.map(({ nome, ...keep }) => keep);
     // --- IQ (Indice di Qualità) calcolato dai distress di questo rilievo ---
     const itemsIQ = lista.map((x) => {
@@ -553,4 +565,18 @@ function wire(root) {
       saveBtn.disabled = false;
     }
   });
+
+  function nuovoRilievo() {
+    strada.value=""; dir.innerHTML=`<option value="">—</option>`; dir.disabled=true;
+    corsia.innerHTML=`<span class="hint">${t("ril_corsia_hint")}</span>`;
+    strato.value="";
+    prog.value=""; progFmt.textContent="—"; lat.value=""; lon.value=""; gpsMsg.textContent="";
+    dest.value=""; dtipo.value=""; dsev.value=""; dsev.disabled=false; dunit.textContent="—";
+    ultimoScostamento=null;
+    lista=[]; renderChips();
+    fotoFile=null; foto.value=""; aiMsg.textContent=""; aiDiag.hidden=true; aiDiag.innerHTML=""; aiBtn.disabled=true; showFotoPreview();
+    if (dataInput) dataInput.value = oraLocaleISO();
+    msg.textContent=""; msg.style.color="var(--muted)"; savedBox.hidden=true; savedBox.innerHTML="";
+  }
+  if (nuovoBtn) nuovoBtn.addEventListener("click", nuovoRilievo);
 }

@@ -324,6 +324,7 @@ body {
 /* ---------- Calibrazione (banca esempi) ---------- */
 .cal-foto { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
 .cal-prev { position: relative; display: inline-block; }
+.cal-prev[hidden] { display: none; }
 .cal-prev img { max-width: 100%; max-height: 260px; border-radius: var(--radius); border: 1px solid var(--line); display: block; }
 .cal-rm { margin-top: 8px; }
 .cal-list { display: flex; flex-direction: column; gap: 8px; }
@@ -516,3 +517,5 @@ polyline.ann-shape { fill: none; }
 /* ---------- Rilievo: box AI disegnati sulla foto ---------- */
 .foto-box { position: absolute; border: 2px dashed #2d7ff9; border-radius: 4px; box-shadow: 0 0 0 1px rgba(0,0,0,.35), inset 0 0 0 1px rgba(0,0,0,.2); pointer-events: none; }
 .foto-box-tag { position: absolute; top: -10px; left: -2px; background: #2d7ff9; color: #fff; font: 700 10px var(--font-mono), monospace; padding: 1px 5px; border-radius: 3px; letter-spacing: .04em; }
+
+.corsie-chk { display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center; min-height:38px; }

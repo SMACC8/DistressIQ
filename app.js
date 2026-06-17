@@ -10,7 +10,7 @@ import { renderStorico } from "./storico.js";
 import { renderStatistiche } from "./statistiche.js";
 import { renderCalibrazione } from "./calibrazione.js";
 import { renderTraining } from "./training.js";
-import { raggruppa } from "./gruppi.js";
+import { raggruppa, labelGruppo } from "./gruppi.js";
 import { t, tx, setLingua, getLang } from "./i18n.js";
 
 const SB_HOST = (() => { try { return new URL(SUPABASE_URL).host; } catch { return SUPABASE_URL; } })();
@@ -292,7 +292,7 @@ async function caricaCatalogo() {
         </button>`;
     };
     box.innerHTML = raggruppa(CATALOGO).map((g) =>
-      `<div class="cat-gruppo">${g.label}</div>` + g.items.map(itemHtml).join("")
+      `<div class="cat-gruppo">${labelGruppo(g.key)}</div>` + g.items.map(itemHtml).join("")
     ).join("");
     box.querySelectorAll(".cat-item").forEach((b) =>
       b.addEventListener("click", () => apriDettaglio(b.dataset.id)));

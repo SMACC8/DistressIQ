@@ -5,6 +5,10 @@
 //  Personalizzati. Usato da catalogo e da tutti i menù a tendina.
 // =====================================================================
 
+import { t, tx } from "./i18n.js";
+
+export function labelGruppo(key) { return t("gruppo_" + key); }
+
 export const GRUPPI = [
   { key: "fessurazione",  label: "Fessurazione" },
   { key: "riparazioni",   label: "Riparazioni e buche" },
@@ -44,8 +48,8 @@ export function raggruppa(catalogo) {
 // <optgroup> per i <select> di scelta distress
 export function optgroupsDistress(catalogo, selectedId) {
   return raggruppa(catalogo).map((g) =>
-    `<optgroup label="${g.label}">` +
-    g.items.map((d) => `<option value="${d.id}"${selectedId === d.id ? " selected" : ""}>${d.codice}·${(d.nome && d.nome.it) || ""}</option>`).join("") +
+    `<optgroup label="${labelGruppo(g.key)}">` +
+    g.items.map((d) => `<option value="${d.id}"${selectedId === d.id ? " selected" : ""}>${d.codice}·${tx(d.nome) || ""}</option>`).join("") +
     `</optgroup>`
   ).join("");
 }

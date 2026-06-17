@@ -123,9 +123,9 @@ export async function renderCalibrazione(root) {
   try {
     catalogo = ordina(await db.distress.list());
     selDistress.innerHTML =
-      `<option value="">— seleziona —</option>` + optgroupsDistress(catalogo);
+      `<option value="">${t("cal_seleziona")}</option>` + optgroupsDistress(catalogo);
   } catch (e) {
-    selDistress.innerHTML = `<option value="">errore catalogo</option>`;
+    selDistress.innerHTML = `<option value="">${t("cat_errore")}</option>`;
   }
 
   function aggiornaSeverita() {

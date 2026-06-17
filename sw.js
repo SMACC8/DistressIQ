@@ -1,6 +1,6 @@
 // Service worker · cache dell'app-shell per uso offline sul campo.
 // Incrementa CACHE quando cambi i file dello shell.
-const CACHE = "distressiq-v51";
+const CACHE = "distressiq-v53";
 const SHELL = [
   "./",
   "./index.html",
