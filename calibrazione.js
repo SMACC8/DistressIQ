@@ -55,8 +55,9 @@ function markup() {
     <div class="panel form-panel">
       <h2 class="sec-h">${t("cal_nuovo_es")}</h2>
       <div class="cal-foto">
-        <input type="file" id="cal-file" accept="image/*" capture="environment" hidden>
-        <button class="btn" id="cal-pick">${t("ril_foto_scegli")}</button>
+        <input type="file" id="cal-file" accept="image/*" hidden>
+        <button class="btn" id="cal-cam">${t("ril_foto_scatta")}</button>
+        <button class="btn" id="cal-gal">${t("ril_foto_galleria")}</button>
         <div id="cal-prev" class="cal-prev" hidden>
           <img id="cal-prev-img" alt="anteprima">
           <button class="btn cal-rm" id="cal-rm">${t("cal_rimuovi")}</button>
@@ -106,7 +107,7 @@ export async function renderCalibrazione(root) {
   root.innerHTML = markup();
 
   const fileInput = root.querySelector("#cal-file");
-  const pickBtn = root.querySelector("#cal-pick");
+  const camBtn = root.querySelector("#cal-cam"), galBtn = root.querySelector("#cal-gal");
   const prev = root.querySelector("#cal-prev");
   const prevImg = root.querySelector("#cal-prev-img");
   const rmBtn = root.querySelector("#cal-rm");
@@ -138,7 +139,8 @@ export async function renderCalibrazione(root) {
     saveBtn.disabled = !(file && selDistress.value);
   }
 
-  pickBtn.addEventListener("click", () => fileInput.click());
+  camBtn.addEventListener("click", () => { fileInput.setAttribute("capture","environment"); fileInput.click(); });
+  galBtn.addEventListener("click", () => { fileInput.removeAttribute("capture"); fileInput.click(); });
   fileInput.addEventListener("change", () => {
     file = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
     if (file) {

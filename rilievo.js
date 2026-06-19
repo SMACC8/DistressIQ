@@ -212,10 +212,9 @@ function markup() {
   <div class="panel form-panel">
     <h2 class="sec-h">${t("ril_foto")}</h2>
     <div class="foto-row">
-      <label class="btn btn-ghost" style="cursor:pointer;display:inline-block">
-        ${t("ril_foto_scegli")}
-        <input id="r-foto" type="file" accept="image/*" hidden />
-      </label>
+      <button type="button" class="btn btn-ghost" id="r-foto-cam">${t("ril_foto_scatta")}</button>
+      <button type="button" class="btn btn-ghost" id="r-foto-gal">${t("ril_foto_galleria")}</button>
+      <input id="r-foto" type="file" accept="image/*" hidden />
       <span id="r-foto-name" class="hint" style="margin-left:12px"></span>
     </div>
     <div id="r-foto-prev" class="foto-prev"></div>
@@ -350,6 +349,8 @@ function wire(root) {
   });
 
   const foto = $("#r-foto"), aiBtn = $("#r-ai"), aiMsg = $("#r-ai-msg"), aiDiag = $("#r-ai-diag");
+  $("#r-foto-cam").addEventListener("click", () => { foto.setAttribute("capture","environment"); foto.click(); });
+  $("#r-foto-gal").addEventListener("click", () => { foto.removeAttribute("capture"); foto.click(); });
   let ubicaPer = null; // indice del distress che si sta ubicando sulla foto
   function disegnaMarkers() {
     const layer = $("#r-foto-markers");
