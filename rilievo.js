@@ -7,7 +7,7 @@ import { db, riconosciDistress } from "./db.js";
 import { storage } from "./storage.js";
 import { calcolaIQ, fasciaDi } from "./iq.js";
 import { optgroupsDistress } from "./gruppi.js";
-import { t } from "./i18n.js";
+import { t, tx } from "./i18n.js";
 
 // ---- Conversione GPS <-> progressiva (proiezione sull'asse ettometrico) ----
 const _etto = {}; // cache: strada -> punti [{progressiva_m, lat, lon}]
@@ -148,7 +148,7 @@ async function raccogliEsempi(strato, max = 3) {
         const image = await blobToBase64(ridotta);
         out.push({
           codice: e.distress ? e.distress.codice : null,
-          nome: e.distress ? ((e.distress.nome && e.distress.nome.it) || "") : "",
+          nome: e.distress ? (tx(e.distress.nome) || "") : "",
           severita: e.severita || null,
           strato: e.strato || null,
           image, mimeType: "image/jpeg",
@@ -405,7 +405,7 @@ function wire(root) {
       const sev = ["bassa","media","alta"].includes(x.severita) ? x.severita : null;
       const item = {
         distress_id: d.id,
-        nome: `${d.codice} · ${(d.nome && d.nome.it) || ""}`,
+        nome: `${d.codice} · ${tx(d.nome) || ""}`,
         severita: d.ha_severita ? sev : null,
         estensione_valore: null,
         estensione_unita: d.unita_misura,
@@ -438,7 +438,7 @@ function wire(root) {
       const res = await riconosciDistress({
         image, mimeType: "image/jpeg",
         strato: strato.value || null,
-        catalogo: catalogo.map((d) => ({ codice: d.codice, nome: (d.nome && d.nome.it) || "" })),
+        catalogo: catalogo.map((d) => ({ codice: d.codice, nome: tx(d.nome) || "" })),
         esempi,
       });
       if (res && res.error) throw new Error(res.error);
@@ -460,7 +460,7 @@ function wire(root) {
   function renderChips() {
     dlist.innerHTML = lista.map((x, i) => `
       <span class="chip">
-        <strong>${x.nome}</strong>${x.severita ? ` · ${x.severita}` : ""}${x.estensione_valore != null ? ` · ${x.estensione_valore} ${UNITA[x.estensione_unita]||x.estensione_unita}` : ""}${x.origine === "ai" ? ` · <span style="color:var(--accent)">AI${x.confidenza != null ? " " + Math.round(x.confidenza*100) + "%" : ""}</span>` : ""}
+        <strong>${x.nome}</strong>${x.severita ? ` · ${t("sev_"+x.severita)}` : ""}${x.estensione_valore != null ? ` · ${x.estensione_valore} ${UNITA[x.estensione_unita]||x.estensione_unita}` : ""}${x.origine === "ai" ? ` · <span style="color:var(--accent)">AI${x.confidenza != null ? " " + Math.round(x.confidenza*100) + "%" : ""}</span>` : ""}
         <button type="button" class="chip-loc${x.posizione ? " set" : ""}" data-i="${i}" title="${t("ril_ubica")}">📍${x.posizione ? " " + (i + 1) : ""}</button>
         <button type="button" class="chip-x" data-i="${i}" aria-label="rimuovi">×</button>
       </span>`).join("");
@@ -481,7 +481,7 @@ function wire(root) {
     if (!d) { msg.style.color="#ff8a8a"; msg.textContent=t("ril_sel_tipo"); return; }
     lista.push({
       distress_id: d.id,
-      nome: `${d.codice} · ${(d.nome && d.nome.it) || ""}`,
+      nome: `${d.codice} · ${tx(d.nome) || ""}`,
       severita: d.ha_severita ? (dsev.value || null) : null,
       estensione_valore: dest.value === "" ? null : Number(dest.value),
       estensione_unita: d.unita_misura,
@@ -546,7 +546,7 @@ function wire(root) {
       const distrHtml = salvati.length
         ? `<div class="saved-title mono">${t("ril_saved_title")}</div><div class="saved-list">` +
           salvati.map((d) => {
-            const sev = d.severita ? ` · sev. ${d.severita}` : "";
+            const sev = d.severita ? ` · ${t("sev_"+d.severita)}` : "";
             const org = d.origine === "ai"
               ? `<span class="saved-tag ai">AI${typeof d.confidenza === "number" ? " " + Math.round(d.confidenza*100) + "%" : ""}</span>`
               : `<span class="saved-tag op">${t("ril_saved_op")}</span>`;

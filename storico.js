@@ -5,7 +5,7 @@
 import { db } from "./db.js";
 import { storage } from "./storage.js";
 import { calcolaIQ, fasciaDi, FASCE, labelFascia } from "./iq.js";
-import { t } from "./i18n.js";
+import { t, tx } from "./i18n.js";
 
 const UNITA = { m: "m", m2: "m²", conteggio: "n°" };
 const STRATO = (k) => (k ? t("strato_" + k) : "");
@@ -38,7 +38,7 @@ const fmtProg = (m) => (m == null ? "—" : `km ${Math.floor(m / 1000)}+${String
 
 function nomeDistress(rd) {
   const d = rd.distress;
-  return `${d ? d.codice : "?"}·${d && d.nome ? (d.nome.it || "") : ""}`;
+  return `${d ? d.codice : "?"}·${d && d.nome ? (tx(d.nome) || "") : ""}`;
 }
 function ubicazione(r) {
   const p = [];
@@ -61,13 +61,13 @@ function dataOra(r) {
 function distressTxt(rd, origine) {
   const items = (rd || []).filter((x) => x.origine === origine);
   if (!items.length) return "—";
-  return items.map((x) => nomeDistress(x) + (x.severita ? ` (${x.severita[0].toUpperCase()})` : "")).join(", ");
+  return items.map((x) => nomeDistress(x) + (x.severita ? ` (${t("sev_"+x.severita)[0].toUpperCase()})` : "")).join(", ");
 }
 function distressPlain(rd, origine) {
   return (rd || []).filter((x) => x.origine === origine).map((x) => {
     const u = UNITA[x.estensione_unita] || x.estensione_unita || "";
     const est = x.estensione_valore != null ? ` ${x.estensione_valore}${u}` : "";
-    return nomeDistress(x) + (x.severita ? ` (${x.severita})` : "") + est;
+    return nomeDistress(x) + (x.severita ? ` (${t("sev_"+x.severita)})` : "") + est;
   }).join("; ");
 }
 
@@ -520,7 +520,7 @@ function apriDettaglio(id) {
     const lis = items.map((x) => {
       const u = UNITA[x.estensione_unita] || x.estensione_unita || "";
       const est = x.estensione_valore != null ? ` — ${x.estensione_valore} ${u}` : "";
-      return `<li>${nomeDistress(x)}${x.severita ? ` · ${x.severita}` : ""}${est}</li>`;
+      return `<li>${nomeDistress(x)}${x.severita ? ` · ${t("sev_"+x.severita)}` : ""}${est}</li>`;
     }).join("");
     return `<div class="m-field"><div class="k">${label}</div><ul class="m-list">${lis}</ul></div>`;
   };

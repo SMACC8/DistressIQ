@@ -5,7 +5,7 @@
 
 import { db } from "./db.js";
 import { calcolaIQ, FASCE, labelFascia } from "./iq.js";
-import { t } from "./i18n.js";
+import { t, tx } from "./i18n.js";
 
 const STRATO = (k) => (k ? t("strato_" + k) : "");
 const SEVL = (k) => t("sev_" + k);
@@ -41,7 +41,7 @@ function aggrega(rilievi) {
     (r.rilievo_distress || []).forEach((d) => {
       s.distressTot++;
       const cod = d.distress ? d.distress.codice : "?";
-      const nome = d.distress && d.distress.nome ? (d.distress.nome.it || "") : "";
+      const nome = d.distress && d.distress.nome ? (tx(d.distress.nome) || "") : "";
       if (!s.perTipo[cod]) s.perTipo[cod] = { etichetta: `${cod}·${nome}`, n: 0 };
       s.perTipo[cod].n++;
       s.perGravita[d.severita || "nessuna"] = (s.perGravita[d.severita || "nessuna"] || 0) + 1;

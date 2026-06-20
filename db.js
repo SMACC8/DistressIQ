@@ -7,6 +7,7 @@
 import { createClient } from "./vendor/supabase.js";
 import { SUPABASE_URL, SUPABASE_KEY } from "./config.js";
 import { guardAI } from "./guardrail.js";
+import { getLang } from "./i18n.js";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -169,7 +170,7 @@ export async function riconosciDistress(payload) {
   guardAI();                                   // freno anti-tempesta di chiamate
   let tier = "standard";
   try { tier = localStorage.getItem("distressiq_model_tier") || "standard"; } catch {}
-  const { data, error } = await supabase.functions.invoke("riconosci-distress", { body: { ...payload, tier } });
+  const { data, error } = await supabase.functions.invoke("riconosci-distress", { body: { ...payload, tier, lang: getLang() } });
   if (error) throw error;
   return data;
 }
@@ -177,7 +178,7 @@ export async function riconosciDistress(payload) {
 // Invoca la Edge Function che, dal nome, suggerisce descrizione/cause/soluzioni
 export async function suggerisciDistress(payload) {
   guardAI();                                   // stesso freno (stesso credito)
-  const { data, error } = await supabase.functions.invoke("suggerisci-distress", { body: payload });
+  const { data, error } = await supabase.functions.invoke("suggerisci-distress", { body: { ...payload, lang: getLang() } });
   if (error) throw error;
   return data;
 }
