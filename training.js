@@ -9,12 +9,12 @@
 // =====================================================================
 
 import { optgroupsDistress } from "./gruppi.js";
-import { t } from "./i18n.js";
+import { t, tx } from "./i18n.js";
 import { db, riconosciDistress } from "./db.js";
 import { storage } from "./storage.js";
 
 const SEVL = (k) => t("sev_" + k);
-const it = (o) => (o && (o.it || o.en || o.es)) || "";
+const it = (o) => tx(o) || "";
 
 function ordina(arr) {
   return [...arr].sort((a, b) => {
