@@ -43,7 +43,7 @@ function nomeDistress(rd) {
 function ubicazione(r) {
   const p = [];
   if (r.strada) p.push(r.strada);
-  if (r.direzione) p.push(r.direzione);
+  if (r.direzione) p.push(t("dir_"+r.direzione));
   if (r.corsia != null) p.push("cor " + r.corsia);
   if (r.progressiva_m != null) p.push(fmtProg(r.progressiva_m));
   return p.length ? p.join(" · ") : "—";

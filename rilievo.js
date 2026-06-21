@@ -56,18 +56,18 @@ async function progressivaToGps(strada, prog) {
   return { lat: L.lat, lon: L.lon };
 }
 
-const STRADA_DIR = {
-  A4:  [["est","Est"],["ovest","Ovest"]],
-  A31: [["nord","Nord"],["sud","Sud"]],
-};
+const STRADA_DIR = (s) => ({
+  A4:  [["est",t("dir_est")],["ovest",t("dir_ovest")]],
+  A31: [["nord",t("dir_nord")],["sud",t("dir_sud")]],
+}[s] || []);
 const STRADA_CORSIE = { A4: [0,1,2,3], A31: [0,1,2] };
-const SEV = [["bassa","Bassa"],["media","Media"],["alta","Alta"]];
+const SEV = () => [["bassa",t("sev_bassa")],["media",t("sev_media")],["alta",t("sev_alta")]];
 const UNITA = { m: "m", m2: "m²", conteggio: "n°" };
-const STRATI = [
-  ["drenante_nuovo","Drenante nuovo"],
-  ["drenante_maturo","Drenante maturo"],
-  ["non_drenante","Non drenante"],
-  ["non_determinabile","Non determinabile"],
+const STRATI = () => [
+  ["drenante_nuovo",t("strato_drenante_nuovo")],
+  ["drenante_maturo",t("strato_drenante_maturo")],
+  ["non_drenante",t("strato_non_drenante")],
+  ["non_determinabile",t("strato_non_determinabile")],
 ];
 
 let catalogo = [];   // distress attivi per il menù
@@ -230,7 +230,7 @@ function markup() {
     <div class="form-grid">
       <div class="field">
         <label>${t("ril_strato")}</label>
-        <select id="r-strato"><option value="">—</option>${STRATI.map(([v,l])=>opt(v,l)).join("")}</select>
+        <select id="r-strato"><option value="">—</option>${STRATI().map(([v,l])=>opt(v,l)).join("")}</select>
       </div>
     </div>
   </div>
@@ -244,7 +244,7 @@ function markup() {
       </div>
       <div class="field">
         <label>${t("ril_sev")}</label>
-        <select id="r-dsev"><option value="">—</option>${SEV.map(([v,l])=>opt(v,l)).join("")}</select>
+        <select id="r-dsev"><option value="">—</option>${SEV().map(([v,l])=>opt(v,l)).join("")}</select>
       </div>
       <div class="field">
         <label>${t("ril_est")} (<span id="r-dunit">—</span>)</label>
@@ -293,7 +293,7 @@ function wire(root) {
 
   strada.addEventListener("change", () => {
     const s = strada.value;
-    dir.innerHTML = `<option value="">—</option>` + (STRADA_DIR[s]||[]).map(([v,l])=>opt(v,l)).join("");
+    dir.innerHTML = `<option value="">—</option>` + STRADA_DIR(s).map(([v,l])=>opt(v,l)).join("");
     corsia.innerHTML = s
       ? (STRADA_CORSIE[s]||[]).map((c)=>`<label class="chk"><input type="checkbox" value="${c}"> ${c}</label>`).join("")
       : `<span class="hint">${t("ril_corsia_hint")}</span>`;
